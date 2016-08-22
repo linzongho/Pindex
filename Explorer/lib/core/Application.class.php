@@ -12,8 +12,9 @@
  */
 class Application {
 	public $default_controller = null;	//默认的类名
+    public $default_action = null;
 	public $default_do = null;			//默认的方法名
-	public $sub_dir ='';				//控制器子目录
+//	public $sub_dir ='';				//控制器子目录
 	public $model = '';				//控制器对应模型  对象。
 	
 	/**
@@ -27,27 +28,20 @@ class Application {
 	/**
 	 * 设置默认的方法名
 	 * @param string $default_action 
-	 */
+     * @return void
+     */
 	public function setDefaultAction($default_action){
 		$this -> default_action = $default_action;
-	} 
-
-	/**
-	 * 设置控制器子目录
-	 * @param string $dir 
-	 */
-	public function setSubDir($dir){
-		$this -> sub_dir = $dir;
 	} 
 
 	/**
 	 * 运行controller 的方法
 	 * @param $class , controller类名。
 	 * @param $function , 方法名
-	 */
+     * @return mixed
+     */
 	public function appRun($class,$function){
-		$sub_dir = $this -> sub_dir ? $this -> sub_dir . '/' : '';
-		$class_file = CONTROLLER_DIR . $sub_dir.$class.'.class.php';
+		$class_file = CONTROLLER_DIR .$class.'.class.php';
 		if (!is_file($class_file)) {
 			pr($class.' controller not exists!',1);
 		}
@@ -67,12 +61,13 @@ class Application {
 	 * 运行自动加载的控制器
 	 */
 	private function autorun(){
-		global $config; 
+		global $config;
 		if (count($config['autorun']) > 0) {
 			foreach ($config['autorun'] as $key => $var) {
 				$this->appRun($var['controller'],$var['function']);				
 			}
-		} 
+		}
+
 	}
 
 	/**

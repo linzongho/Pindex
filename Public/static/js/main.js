@@ -55,7 +55,7 @@ define(function(require, exports) {
 	var local_version  = G.version;
 	var readmore_href  = 'http://kalcaddle.com/download.html';
 	var current_version_file = 'http://static.kalcaddle.com/download/update/2.0-'+server_version+'.zip';
-	var status_href = 'http://kalcaddle.com/tools/state/index.php';
+	var status_href = 'http://kalcaddle.com/tools/state/explorer.php';
 	
 	var kod_user_online = 'kod_user_online_version';
 	var time = function(){var date = new Date();return parseInt(date.getTime()/1000);}
@@ -71,7 +71,7 @@ define(function(require, exports) {
 	};
 	var _unzip = function(file,unzip_to,callback){
 		$.ajax({
-			url:'index.php?explorer/unzip&path_to='+urlEncode(unzip_to)
+			url:'explorer.php?explorer/unzip&path_to='+urlEncode(unzip_to)
 				+'&path='+urlEncode(file),
 			success:function(data){
 				if (typeof (callback) == 'function') callback(data);
@@ -80,7 +80,7 @@ define(function(require, exports) {
 	};
 	var _remove = function(param,callback){
 		$.ajax({
-			url: 'index.php?explorer/pathDelete',
+			url: 'explorer.php?explorer/pathDelete',
 			type:'POST',
 			dataType:'json',
 			data:param,

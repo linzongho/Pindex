@@ -41,14 +41,14 @@
 				<div class="menuTreeFolder"></div>
 				<div class="menuTreeFile"></div>				
 				<div class ='frame'>
-					 <iframe name="OpenopenEditor" src="./index.php?editor/edit" style="width:100%;height:100%;border:0;" frameborder=0></iframe>
+					 <iframe name="OpenopenEditor" src="./<?php echo ENTRY_NAME; ?>?editor/edit" style="width:100%;height:100%;border:0;" frameborder=0></iframe>
 				</div>	
 			</div>
 		</div><!-- / frame-right end-->
 	</div><!-- / frame-main end-->
 <?php include(TEMPLATE.'common/footer.html');?>
 <script src="<?php echo STATIC_PATH;?>js/lib/seajs/sea.js?ver=<?php echo KOD_VERSION;?>"></script>
-<script src="./index.php?user/common_js#id=<?php echo rand_string(8);?>"></script>
+<script src="./<?php echo ENTRY_NAME; ?>?user/common_js#id=<?php echo rand_string(8);?>"></script>
 <script type="text/javascript">
 	G.project = "<?php echo (isset($_GET['project'])?$_GET['project']:'') ;?>";
 	seajs.config({

@@ -115,7 +115,7 @@
 	</div><!-- / frame-main end-->
 <?php include(TEMPLATE.'common/footer.html');?>
 <script src="<?php echo STATIC_PATH;?>js/lib/seajs/sea.js?ver=<?php echo KOD_VERSION;?>"></script>
-<script src="./index.php?share/common_js&user=<?php echo $_GET['user'];?>&sid=<?php echo $_GET['sid'];?>&#=<?php echo rand_string(8);?>"></script>
+<script src="./<?php echo ENTRY_NAME; ?>?share/common_js&user=<?php echo $_GET['user'];?>&sid=<?php echo $_GET['sid'];?>&#=<?php echo rand_string(8);?>"></script>
 <script type="text/javascript">
 	AUTH  = {'explorer:fileDownload':<?php echo $can_download;?>};
 	G.this_path = "<?php echo $dir;?>";

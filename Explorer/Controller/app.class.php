@@ -25,7 +25,7 @@ class app extends Controller{
         $default = explode(',',$new_user_app);
         $info = array();
         foreach ($default as $key) {
-            $info[$key] = $list[$key];
+            isset($list[$key]) and $info[$key] = $list[$key];
         }
         $desktop = USER_PATH.$user_info['name'].'/home/desktop/';
         mk_dir($desktop);

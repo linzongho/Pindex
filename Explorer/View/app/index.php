@@ -36,7 +36,7 @@ http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
 		</div>
 	</div>
 <script src="<?php echo STATIC_PATH;?>js/lib/seajs/sea.js?ver=<?php echo KOD_VERSION;?>"></script>
-<script src="./index.php?user/common_js#id=<?php echo rand_string(8);?>"></script>
+<script src="./<?php echo ENTRY_NAME; ?>?user/common_js#id=<?php echo rand_string(8);?>"></script>
 <script type="text/javascript">
 	seajs.config({
 		base: "<?php echo STATIC_PATH;?>js/",

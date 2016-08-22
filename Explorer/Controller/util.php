@@ -151,12 +151,24 @@ function php_env_check(){
 			$error.= '<li>'.str_replace($parent,'',$value).'/	'.$L['php_env_error_path'].'</li>';
 		}
 	}
-    if( !function_exists('imagecreatefromjpeg')||
-        !function_exists('imagecreatefromgif')||
-        !function_exists('imagecreatefrompng')||	
-        !function_exists('imagecolorallocate')){
-        $error.= '<li>'.$L['php_env_error_gd'].'</li>';
+    if(!function_exists('imagecreatefromjpeg')){
+        $error.= '<li>GD-jpeg not found!</li>';
     }
+    if(!function_exists('imagecreatefromgif')){
+        $error.= '<li>GD-gif not found!</li>';
+    }
+    if(!function_exists('imagecreatefrompng')){
+        $error.= '<li>GD-png not found!</li>';
+    }
+    if(!function_exists('imagecolorallocate')){
+        $error.= '<li>imagecolorallocate not found!</li>';
+    }
+//    if( !function_exists('imagecreatefromjpeg')||
+//        !function_exists('imagecreatefromgif')||
+//        !function_exists('imagecreatefrompng')||
+//        !function_exists('imagecolorallocate')){
+//        $error.= '<li>'.$L['php_env_error_gd'].'</li>';
+//    }
     return $error;
 }
 
@@ -245,7 +257,7 @@ function user_logout(){
     setcookie('kod_token', '', time()-3600);
     setcookie('kod_user_language', '', time()-3600);
     session_destroy();
-    header('location:./index.php?user/login');
+    header('location:./'.ENTRY_NAME.'?user/login');
     exit;
 }
 

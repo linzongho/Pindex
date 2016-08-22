@@ -202,4 +202,22 @@ class SEK {
             .chr(125);// "}"
         return $uuid;
     }
+
+    /**
+     * 判断是否是https连接
+     * @return bool
+     */
+    public static function isHttps(){
+        if (!isset($_SERVER['HTTPS'])) {
+            return false;
+        }
+        if ($_SERVER['HTTPS'] === 1) {  //Apache
+            return true;
+        } elseif ($_SERVER['HTTPS'] === 'on') { //IIS
+            return true;
+        } elseif ($_SERVER['SERVER_PORT'] == 443) { //其他
+            return true;
+        }
+        return false;
+    }
 }

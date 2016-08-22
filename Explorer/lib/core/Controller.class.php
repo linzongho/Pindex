@@ -29,6 +29,7 @@ abstract class Controller {
 		$this -> in = &$in;	
 		$this -> values['config'] = &$config;
 		$this -> values['in'] = &$in;
+        $this -> assign('entry_name',ENTRY_NAME);
 	} 
 
 	/**

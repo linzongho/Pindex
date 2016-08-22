@@ -131,27 +131,6 @@ function stripslashes_deep($value){
 	return $value; 
 }
 
-/**
- * GET/POST数据统一入口
- * 将GET和POST的数据进行过滤，去掉非法字符以及hacker code，返回一个数组
- * 注意如果GET和POST有相同的Key，POST优先
- * 
- * @return array $_GET和$_POST数据过滤处理后的值
- */
-function parse_incoming(){
-	global $_GET, $_POST,$_COOKIE;
-
-	$_COOKIE = stripslashes_deep($_COOKIE);
-	$_GET	 = stripslashes_deep($_GET);
-	$_POST	 = stripslashes_deep($_POST);
-	$return = array();
-	$return = array_merge($_GET,$_POST);
-	$remote = array_get($return,0);
-	$remote = explode('/',trim($remote[0],'/'));
-	$return['URLremote'] = $remote;
-	return $return;
-} 
-
 function url2absolute($index_url, $preg_url){
 	if (preg_match('/[a-zA-Z]*\:\/\//', $preg_url)) return $preg_url;
 	preg_match('/([a-zA-Z]*\:\/\/.*)\//', $index_url, $match);

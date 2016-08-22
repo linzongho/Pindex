@@ -6,10 +6,10 @@
 * @license http://kalcaddle.com/tools/licenses/license.txt
 */
 
-class user extends Controller
-{
+class user extends Controller {
+
     private $user;  //用户相关信息
-    private $auth;  //用户所属组权限
+//    private $auth;  //用户所属组权限
     private $notCheck;
     function __construct(){
         parent::__construct();
@@ -28,9 +28,9 @@ class user extends Controller
      */
     public function loginCheck(){
         if (ST == 'share') return true;//共享页面
-        if(in_array(ACT,$this->notCheck)){//不需要判断的action
-            return;
-        }else if($_SESSION['kod_login']===true && $_SESSION['kod_user']['name']!=''){
+        if(in_array(ACT,$this->notCheck)){
+            //不需要判断的action
+        }else if(isset($_SESSION['kod_login']) and $_SESSION['kod_login'] === true and $_SESSION['kod_user']['name']!=''){
             define('USER',USER_PATH.$this->user['name'].'/');
             define('USER_TEMP',USER.'data/temp/');
             define('USER_RECYCLE',USER.'recycle/');
@@ -55,8 +55,7 @@ class user extends Controller
             if($this->config['user']['theme']==''){
                 $this->config['user'] = $this->config['setting_default'];
             }
-            return;
-        }else if($_COOKIE['kod_name']!='' && $_COOKIE['kod_token']!=''){
+        }else if(!empty($_COOKIE['kod_name']) and $_COOKIE['kod_token']!=''){
             $member = new fileCache(USER_SYSTEM.'member.php');
             $user = $member->get($_COOKIE['kod_name']);
             if (!is_array($user) || !isset($user['password'])) {
@@ -77,11 +76,12 @@ class user extends Controller
                 $this->logout();//不自动登录
             }else{
                 if (!file_exists(USER_SYSTEM.'install.lock')) {
-                    $this->display('install.html');exit;
+                    $this->display('install.php');exit;
                 }
-                header('location:./index.php?user/loginSubmit&name=guest&password=guest');
+                header('location:./'.ENTRY_NAME.'?user/loginSubmit&name=guest&password=guest');
             }
         }
+        return false;
     }
 
     //临时文件访问
@@ -132,21 +132,24 @@ class user extends Controller
         $js .= 'AUTH='.json_encode($GLOBALS['auth']).';';
         $js .= 'G='.json_encode($the_config).';';
         header("Content-Type:application/javascript");
+        \Pindex\Debugger::closeTrace();
         echo $js;
     }
 
     /**
      * 登录view
+     * @param string $msg
+     * @return void
      */
     public function login($msg = ''){
         if (!file_exists(USER_SYSTEM.'install.lock')) {
-            $this->display('install.html');exit;
+            $this->display('install.php');exit;
         }
         $this->assign('msg',$msg);
         if (is_wap()) {
-            $this->display('login_wap.html');
+            $this->display('login_wap.php');
         }else{
-            $this->display('login.html');
+            $this->display('login.php');
         } 
         exit;
     }
@@ -156,7 +159,7 @@ class user extends Controller
      */
     public function loginFirst(){
         touch(USER_SYSTEM.'install.lock');
-        header('location:./index.php?user/login');
+        header('location:./'.ENTRY_NAME.'?user/login');
         exit;
     }
     /**
@@ -200,7 +203,7 @@ class user extends Controller
                 if ($this->in['rember_password'] == '1') {
                     setcookie('kod_token',md5($user['password'].get_client_ip()),time()+3600*24*365);
                 }
-                header('location:./index.php');
+                header('location:./'.ENTRY_NAME);
                 return;
             }else{
                 $msg = $this->L['password_error'];
@@ -218,7 +221,7 @@ class user extends Controller
         $password_new=$this->in['password_new'];
         if (!$password_now && !$password_new)show_json($this->L['password_not_null'],false);
         if ($this->user['password']==md5($password_now)){
-            $member_file = USER_SYSTEM.'member.php';
+//            $member_file = USER_SYSTEM.'member.php';
             $sql=new fileCache(USER_SYSTEM.'member.php');
             $this->user['password'] = md5($password_new);
             $sql->update($this->user['name'],$this->user);

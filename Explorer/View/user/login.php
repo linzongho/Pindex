@@ -33,7 +33,7 @@
             	<?php if(need_check_code() && isset($_SESSION['code_error_time']) && intval($_SESSION['code_error_time']) >=3){?>
 				<div class='check_code'>
 					<span><?php echo $L['login_code'];?>：</span>
-					<input name='check_code' class="check_code" type="text" placeholder="<?php echo $L['login_code'];?>" required /> <img src='./index.php?user/checkCode' onclick="this.src='./index.php?user/checkCode'" />
+					<input name='check_code' class="check_code" type="text" placeholder="<?php echo $L['login_code'];?>" required /> <img src='./<?php echo ENTRY_NAME; ?>?user/checkCode' onclick="this.src='./<?php echo ENTRY_NAME; ?>?user/checkCode'" />
 					<div style="clear:both;"></div>
 				</div>				
 				<?php }?>
@@ -48,13 +48,13 @@
 
 			<div class='guest'>
 				<?php if ($this->config['setting_system']['auto_login'] == '1') {?>
-				<a href="./index.php?user/loginSubmit&name=guest&password=guest"><?php echo $L['guest_login'];?><i class=' icon-arrow-right'></i></a>
+				<a href="./<?php echo ENTRY_NAME; ?>?user/loginSubmit&name=guest&password=guest"><?php echo $L['guest_login'];?><i class=' icon-arrow-right'></i></a>
 				<?php } ?>
 			</div>
 		</div>
 	</div>
 <div class="common_footer"><?php echo $L['copyright_pre'].' v'.KOD_VERSION.' | '.$L['copyright_info'];?></div>
-<script src="./index.php?share/common_js#id=<?php echo rand_string(8);?>"></script>
+<script src="./<?php echo ENTRY_NAME; ?>?share/common_js#id=<?php echo rand_string(8);?>"></script>
 <script src="<?php echo STATIC_PATH;?>js/lib/seajs/sea.js?ver=<?php echo KOD_VERSION;?>"></script>
 <script type="text/javascript">
 	seajs.config({
