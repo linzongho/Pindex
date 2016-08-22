@@ -176,4 +176,30 @@ class SEK {
         -- $recursive_counter;
         return $result;
     }
+
+    /**
+     * 获取一个guid
+     * GUID： 即Globally Unique Identifier（全球唯一标识符） 也称作 UUID(Universally Unique IDentifier) 。
+     * GUID是一个通过特定算法产生的二进制长度为128位的数字标识符，用于指示产品的唯一性。GUID 主要用于在拥有多个节点
+     * 、多台计算机的网络或系统中，分配必须具有唯一性的标识符。
+     * 在 Windows 平台上，GUID 广泛应用于微软的产品中，用于标识如如注册表项、类及接口标识、数据库、系统目录等对象。
+     * GUID 的格式为“xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx”，其中每个 x 是 0-9 或 a-f 范围内的一个32位十六进制
+     * 数。例如：6F9619FF-8B86-D011-B42D-00C04FC964FF 即为有效的 GUID 值。
+     * GUID在空间上和时间上具有唯一性，保证同一时间不同地方产生的数字不同。 ★世界上的任何两台计算机都不会生成重复的
+     * GUID 值。★需要GUID的时候，可以完全由算法自动生成，不需要一个权威机构来管理。 ★GUID的长度固定，并且相对而言
+     * 较短小，非常适合于排序、标识和存储。
+     * @return string
+     */
+    public static function createGUID(){
+        $charid = strtoupper(md5(uniqid(mt_rand(), true)));
+        $hyphen = chr(45);// "-"
+        $uuid = chr(123)// "{"
+            .substr($charid, 0, 8).$hyphen
+            .substr($charid, 8, 4).$hyphen
+            .substr($charid,12, 4).$hyphen
+            .substr($charid,16, 4).$hyphen
+            .substr($charid,20,12)
+            .chr(125);// "}"
+        return $uuid;
+    }
 }
