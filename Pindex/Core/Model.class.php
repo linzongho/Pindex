@@ -316,7 +316,7 @@ class Model {
 
             $inputs = $this->_inputs['fields'];
             $sql = "INSERT INTO {$tablename} ({$fields}) VALUES ({$holder});";
-//            \PLite\dumpout($sql,$inputs);
+//            \Pindex\dumpout($sql,$inputs);
             return $this->exec($sql,$inputs);
         }else{
             //给定了参数的情况下无需考虑链式调用设置的参数
@@ -406,7 +406,7 @@ class Model {
             empty($this->_options['table']) and Exception::throwing('Table should not be empty!',$this->_options);
             $tablename = $this->_options['table'];
             //设置更新字段
-//            \PLite\dumpout($this->_options,$this->_inputs);
+//            \Pindex\dumpout($this->_options,$this->_inputs);
             empty($this->_options['fields']) and Exception::throwing('Fields should not be empty!',$this->_options);
             $fields = explode(',',$this->_options['fields'] );
             array_walk($fields,function (&$field){
@@ -429,7 +429,7 @@ class Model {
                 $inputs = array_merge($inputs,$this->_options['where']);
             }
 
-//            \PLite\dumpout([$sql,$inputs]);
+//            \Pindex\dumpout([$sql,$inputs]);
 
             $result = $this->exec($sql,$inputs);
 //            dumpout([$sql,$inputs],$result);
@@ -516,7 +516,7 @@ class Model {
             $inputs = isset($this->_inputs['fields'])?$this->_inputs['fields']:null;
             if(isset($this->_inputs['where'])) $inputs = array_merge($inputs,$this->_inputs['where']);
 
-//            \PLite\dumpout($sql,$inputs,$this->query($sql,$inputs),$this->error);
+//            \Pindex\dumpout($sql,$inputs,$this->query($sql,$inputs),$this->error);
             return $this->query($sql,$inputs);
         }
 

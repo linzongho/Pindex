@@ -7,6 +7,7 @@
  * Time: 9:44 AM
  */
 namespace Pindex\Util;
+use Pindex\Core\Storage;
 
 /**
  * Class Trace
@@ -77,7 +78,9 @@ class Trace {
         $files  =  get_included_files();
         $info   =   [];
         foreach ($files as $key=>$file){
-            $info[] = $file.' ( '.number_format(filesize($file)/1024,2).' KB )';
+            $size = number_format(filesize($file)/1024,2);
+            $perm = Storage::permission($file);
+            $info[] = "{$file} (Size:{$size} KB/ Permission: {$perm})";
         }
 
         //运行时间与内存开销

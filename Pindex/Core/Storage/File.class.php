@@ -125,6 +125,10 @@ class File implements StorageInterface {
      */
     public function read($filepath, $file_encoding='UTF-8',$readout_encoding='UTF-8',$maxlen=4094304){
         if(!$this->checkReadableWithRevise($filepath)) return null;
+        if(!is_file($filepath)){
+            // 文件不存在，直接返回false
+            return false;
+        }
         $content = file_get_contents($filepath,null,null,null,$maxlen);//限制大小为2M
         if(false === $content) return false;//false on failure
         if(null === $file_encoding or $file_encoding === $readout_encoding){

@@ -169,4 +169,12 @@ class Memcached implements CacheInterface {
         return $this->handler->flush();
     }
 
+    /**
+     * @access public
+     * @param string $name 缓存名称
+     * @return bool
+     */
+    public function has($name){
+        return $this->handler->get($this->options['prefix'] . $name) !== false;
+    }
 }

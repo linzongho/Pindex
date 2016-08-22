@@ -12,7 +12,8 @@ const PINDEX_PAGE_TRACE_ON = true;
 
 include '../Pindex/engine.php';
 
-Pindex::init([]);
-Pindex::start();
+Pindex::start([
+    'CACHE_URL_ON'      => true,
+]);
 //Pindex::initout();
 

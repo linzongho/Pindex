@@ -37,10 +37,10 @@ class Configger {
     private static $_config = [
         'AUTO_BUILD'        => true,
         'AUTO_CLASS_LIST'   => [
-            'PLite\\Core\\Dao',
-            'PLite\\Core\\Cache',
-            'PLite\\Core\\Router',
-            'PLite\\Library\\View',
+            'Pindex\\Core\\Dao',
+            'Pindex\\Core\\Cache',
+            'Pindex\\Core\\Router',
+            'Pindex\\Library\\View',
         ],
         'USER_CONFIG_PATH'  => PINDEX_PATH_RUNTIME.'/dynamic_config/',
     ];

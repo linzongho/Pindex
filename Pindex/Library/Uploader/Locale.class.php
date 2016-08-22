@@ -12,7 +12,7 @@ use Pindex\Core\Storage;
 
 /**
  * Class Local 本地驱动
- * @package PLite\Vendor\Think\Uploader
+ * @package Pindex\Vendor\Think\Uploader
  */
 class Locale implements UploaderInterface {
     /**
@@ -41,7 +41,7 @@ class Locale implements UploaderInterface {
     public function checkRootPath($rootpath){
         if(!(is_dir($rootpath) and is_writable($rootpath))){
             $result = Storage::mkdir($rootpath,0766);
-//            \PLite\dumpout($rootpath,$result);
+//            \Pindex\dumpout($rootpath,$result);
             if(!$result){
                 $this->error = 'failed to check root path:'.$rootpath;
                 return false;

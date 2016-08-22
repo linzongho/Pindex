@@ -19,7 +19,7 @@ use Pindex\PindexException;
 class File implements CacheInterface {
 
     protected $options = [
-        'expire'        => 0,
+        'expire'        => 3600,
         'cache_subdir'  => true,
         'path_level'    => 1,
         'prefix'        => '',
@@ -95,8 +95,32 @@ class File implements CacheInterface {
     public function has($name)
     {
         $filename = $this->filename($name);
-        return is_file($filename);
+        $content = Storage::read($filename);
+        if(false !== $content){
+            $expire = intval(substr($content, 8, 12));
+            if (self::checkExpire($filename,$expire)) {
+                //缓存过期删除缓存文件
+                $this->delete($filename);
+                return false;
+            }else{
+                return true;
+            }
+        }
+        return false;
     }
+
+
+    /**
+     * 检查文件是否过期
+     * @static
+     * @param $path
+     * @param $expire
+     * @return bool
+     */
+    public static function checkExpire($path,$expire){
+        return 0 != $expire && PINDEX_REQUEST_TIME > (Storage::mtime($path) + $expire);
+    }
+
 
     /**
      * 读取缓存
@@ -113,7 +137,7 @@ class File implements CacheInterface {
         $content = file_get_contents($filename);
         if (false !== $content) {
             $expire = (int) substr($content, 8, 12);
-            if (0 != $expire && PINDEX_REQUEST_TIME > filemtime($filename) + $expire) {
+            if (self::checkExpire($filename,$expire)) {
                 //缓存过期删除缓存文件
                 $this->delete($filename);
                 return $default;

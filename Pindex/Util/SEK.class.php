@@ -130,10 +130,10 @@ class SEK {
                         }
                         break;
                     case T_START_HEREDOC:
-                        $stripStr .= "<<<PLite\n";
+                        $stripStr .= "<<<Pindex\n";
                         break;
                     case T_END_HEREDOC:
-                        $stripStr .= "PLite;\n";
+                        $stripStr .= "Pindex;\n";
                         for($k = $i+1; $k < $len; $k++) {
                             if(is_string($tokens[$k]) && $tokens[$k] == ';') {
                                 $i = $k;

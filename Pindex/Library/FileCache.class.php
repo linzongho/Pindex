@@ -35,7 +35,7 @@ namespace Pindex\Library;
  *     查找方式删除  delete('group','','root');
  *     查找方式更新  update('group','system','root');
  *     查找方式获取  get('group','','root');
- * @package PLite\Library
+ * @package Pindex\Library
  */
 class FileCache {
     /**
@@ -246,7 +246,7 @@ class FileCache {
     public static function save($file,$data){//10000次需要6s
         if (!$file) return;
         if (file_exists($file) && !is_writable($file)) {
-            PLiteException::throwing("the path '{$file}' can not write!");
+            PindexException::throwing("the path '{$file}' can not write!");
         }
         if($fp = fopen($file, "w")){
             if (flock($fp, LOCK_EX)) {  // 进行排它型锁定

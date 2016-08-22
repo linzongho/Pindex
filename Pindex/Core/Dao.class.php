@@ -117,17 +117,17 @@ abstract class DaoDriver extends PDO {
 /**
  * Class Dao
  * Database access object
- * @package PLite\Core
+ * @package Pindex\Core
  */
 class Dao extends Lite {
 
     const CONF_NAME = 'dao';
     const CONF_CONVENTION = [
-        'PRIOR_INDEX' => 0,
+        'DRIVER_DEFAULT_INDEX' => 0,
         'DRIVER_CLASS_LIST' => [
-            'PLite\\Core\\Dao\\MySQL',
-            'PLite\\Core\\Dao\\Oci',
-            'PLite\\Core\\Dao\\SQLServer',
+            'Pindex\\Core\\Dao\\MySQL',
+            'Pindex\\Core\\Dao\\Oci',
+            'Pindex\\Core\\Dao\\SQLServer',
         ],
         'DRIVER_CONFIG_LIST' => [
             [
@@ -237,7 +237,7 @@ class Dao extends Lite {
      */
     public function query($sql,array $inputs=null){
         $this->error = null;
-//        \PLite\dumpout($sql,$inputs,$this->_driver);
+//        \Pindex\dumpout($sql,$inputs,$this->_driver);
         try {
             if(empty($inputs)){
                 //直接使用PDO的查询功能

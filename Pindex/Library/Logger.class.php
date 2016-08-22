@@ -58,9 +58,9 @@ class Logger extends Lite {
 
     const CONF_NAME = 'log';
     const CONF_CONVENTION = [
-        'PRIOR_INDEX' => 0,//默认的驱动标识符，类型为int或者string
+        'DRIVER_DEFAULT_INDEX' => 0,//默认的驱动标识符，类型为int或者string
         'DRIVER_CLASS_LIST' => [
-            'PLite\\Library\\Logger\\File',
+            'Pindex\\Library\\Logger\\File',
         ],//驱动类列表
 
         'LOG_RATE'      => Logger::LOGRATE_DAY,

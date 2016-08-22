@@ -124,15 +124,15 @@ interface StorageInterface {
  * @method bool unlink(string $filepath,bool $recursion = false) static 删除文件,目录时必须保证该目录为空
  * @method bool write(string $filepath,string $content,string $write_encode = null,string $text_encode = 'UTF-8') static 将指定内容写入到文件中
  * @method bool append(string $filepath,string  $content,string $write_encode = null,string $text_encode = 'UTF-8') static 将指定内容追加到文件中
- * @package PLite
+ * @package Pindex
  */
 class Storage extends Lite{
 
     const CONF_NAME = 'storage';
     const CONF_CONVENTION = [
-        'PRIOR_INDEX' => 0,
+        'DRIVER_DEFAULT_INDEX' => 0,
         'DRIVER_CLASS_LIST' => [
-            'PLite\\Core\\Storage\\File',
+            'Pindex\\Core\\Storage\\File',
         ],
         'DRIVER_CONFIG_LIST' => [
             [
@@ -150,5 +150,67 @@ class Storage extends Lite{
     const IS_DIR    = -1;
     const IS_FILE   = 1;
     const IS_EMPTY  = 0;
+
+//-------------------------------- 特征方法，仅适用于文件系统的驱动 ----------------------------------------------------------------------//
+    /**
+     * 获取文件权限，以linux的格式显示
+     * @static
+     * @param string $file
+     * @return string|false
+     */
+    public static function permission($file){
+        if(is_readable($file)){
+            $perms = fileperms($file);
+            if (($perms & 0xC000) == 0xC000) {
+                // Socket
+                $info = 's';
+            } elseif (($perms & 0xA000) == 0xA000) {
+                // Symbolic Link
+                $info = 'l';
+            } elseif (($perms & 0x8000) == 0x8000) {
+                // Regular
+                $info = '-';
+            } elseif (($perms & 0x6000) == 0x6000) {
+                // Block special
+                $info = 'b';
+            } elseif (($perms & 0x4000) == 0x4000) {
+                // Directory
+                $info = 'd';
+            } elseif (($perms & 0x2000) == 0x2000) {
+                // Character special
+                $info = 'c';
+            } elseif (($perms & 0x1000) == 0x1000) {
+                // FIFO pipe
+                $info = 'p';
+            } else {
+                // Unknown
+                $info = 'u';
+            }
+
+            // Owner
+            $info .= (($perms & 0x0100) ? 'r' : '-');
+            $info .= (($perms & 0x0080) ? 'w' : '-');
+            $info .= (($perms & 0x0040) ?
+                (($perms & 0x0800) ? 's' : 'x' ) :
+                (($perms & 0x0800) ? 'S' : '-'));
+
+            // Group
+            $info .= (($perms & 0x0020) ? 'r' : '-');
+            $info .= (($perms & 0x0010) ? 'w' : '-');
+            $info .= (($perms & 0x0008) ?
+                (($perms & 0x0400) ? 's' : 'x' ) :
+                (($perms & 0x0400) ? 'S' : '-'));
+
+            // Other
+            $info .= (($perms & 0x0004) ? 'r' : '-');
+            $info .= (($perms & 0x0002) ? 'w' : '-');
+            $info .= (($perms & 0x0001) ?
+                (($perms & 0x0200) ? 't' : 'x' ) :
+                (($perms & 0x0200) ? 'T' : '-'));
+            return $info;
+        }else{
+            return false;
+        }
+    }
 
 }

@@ -14,7 +14,6 @@ namespace {
     use Pindex\Debugger;
     use Pindex\Loader;
     use Pindex\PindexException;
-    use Pindex\Response;
     const PINDEX_VERSION = 0.1;
 
     const TYPE_BOOL     = 'boolean';
@@ -39,6 +38,13 @@ namespace {
     const ONE_WEEK  = 604800;
     const ONE_MONTH = 2592000;
 
+    const PINDEX_IS_CLI = PHP_SAPI === 'cli';
+    define('PINDEX_IS_WIN',false !== stripos(PHP_OS, 'WIN'));//const IS_WINDOWS = PHP_OS === 'WINNT';
+
+    if(PINDEX_IS_CLI){
+        include_once __DIR__.'console.engine.php';
+    }
+
 //---------------------------------- mode constant -------------------------------------//
     defined('PINDEX_DEBUG_MODE_ON') or define('PINDEX_DEBUG_MODE_ON', true);
     defined('PINDEX_PAGE_TRACE_ON') or define('PINDEX_PAGE_TRACE_ON', true);//在处理微信签名检查时会发生以外的错误
@@ -55,17 +61,16 @@ namespace {
     define('PINDEX_REQUEST_MICROTIME', $_SERVER['REQUEST_TIME_FLOAT']);//(int)($_SERVER['REQUEST_TIME_FLOAT']*1000)//isset($_SERVER['REQUEST_TIME_FLOAT'])? $_SERVER['REQUEST_TIME_FLOAT']:microtime(true)
     define('PINDEX_REQUEST_TIME',$_SERVER['REQUEST_TIME']);
 
-    define('PINDEX_IS_CLI',PHP_SAPI === 'cli');
-    define('PINDEX_IS_WIN',false !== stripos(PHP_OS, 'WIN'));//const IS_WINDOWS = PHP_OS === 'WINNT';
+
     define('PINDEX_IS_AJAX', ((isset($_SERVER['HTTP_X_REQUESTED_WITH']) and strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) == 'xmlhttprequest') ));
     define('PINDEX_IS_POST',$_SERVER['REQUEST_METHOD'] === 'POST');//“GET”, “HEAD”，“POST”，“PUT”
-
     define('PINDEX_HTTP_PREFIX', (isset ($_SERVER ['HTTPS']) and $_SERVER ['HTTPS'] === 'on') ? 'https://' : 'http://' );
-
     $script_dir = rtrim(dirname($_SERVER['SCRIPT_NAME']),'/');
     define('PINDEX_PUBLIC_URL',PINDEX_HTTP_PREFIX.$_SERVER['SERVER_NAME'].
     (empty($_SERVER['SERVER_PORT']) or (80 == $_SERVER['SERVER_PORT']))?
         $script_dir : ":{$_SERVER['SERVER_PORT']}{$script_dir}");
+
+
     define('PINDEX_PATH_BASE',  PINDEX_IS_WIN?str_replace('\\','/',dirname(__DIR__)):dirname(__DIR__));
     const PINDEX_PATH_FRAMEWORK = PINDEX_PATH_BASE.'/Pindex';
     const PINDEX_PATH_CONFIG    = PINDEX_PATH_BASE.'/Config';
@@ -78,7 +83,6 @@ namespace {
     //environment
     version_compare(PHP_VERSION,'5.6','<') and die('Require php >= 5.6 !');
 
-
     if(PINDEX_DEBUG_MODE_ON) include __DIR__.'/Common/debug_suit.php';
 
     final class Pindex {
@@ -89,7 +93,7 @@ namespace {
         public static $config = [
             'APP_NAME'          => 'Application',//决定应用目录
             'OS_ENCODING'       => 'UTF-8',//file system encoding,GB2312 for windows,and utf8 for most linux
-            'EXCEPTION_CLEAN'   => 'false',//it will clean the output before if error or exception occur
+            'EXCEPTION_CLEAN'   => false,//it will clean the output before if error or exception occur
             'TIMEZONE_ZONE'     => 'Asia/Shanghai',
 
             //配合nginx负载均衡达到'线路容灾'的目的
@@ -103,6 +107,12 @@ namespace {
 
             //string
             'FUNCTION_PACK'     => null,
+
+            //静态缓存控制
+            'CACHE_URL_ON'      => false,
+            'CACHE_PATH_ON'     => false,
+
+            'ROUTE_ON'          => false,
         ];
         /**
          * @var bool 标记是否需要初始化
@@ -114,14 +124,13 @@ namespace {
          * @static
          * @param array $config 系统配置
          */
-        public static function init(array $config=[]){
+        public static function init(array $config=null){
             Debugger::import('app_begin',$GLOBALS['litex_begin']);
             Debugger::status('app_init_begin');
-            self::$config = array_merge(self::$config,$config);
+            $config and self::$config = array_merge(self::$config,$config);
 
 //-------------------------------------------------------- general constant -----------------------------------------------------------//
             define('PINDEX_APP_NAME',self::$config['APP_NAME']);
-
             define('PINDEX_OS_ENCODING',self::$config['OS_ENCODING']);
             define('PINDEX_EXCEPTION_CLEAN',self::$config['EXCEPTION_CLEAN']);
 
@@ -129,10 +138,14 @@ namespace {
             date_default_timezone_set(self::$config['TIMEZONE_ZONE']) or die('Date default timezone set failed!');
 
             //behavior
-            spl_autoload_register([Loader::class,'load']) or die('Faile to register class autoloader!');
+            spl_autoload_register([Loader::class,'load'],false,true) or die('Faile to register class autoloader!');
             self::registerErrorHandler(self::$config['ERROR_HANDLER']);
             self::registerExceptionHandler(self::$config['EXCEPTION_HANDLER']);
 
+            register_shutdown_function(function (){/* 脚本结束时将会自动输出，所以不能把输出控制语句放到这里 */
+                PINDEX_PAGE_TRACE_ON and !PINDEX_IS_AJAX and Debugger::showTrace();//show the trace info
+                Debugger::status('script_shutdown');
+            });
 
             //function pack
             if(self::$config['FUNCTION_PACK']){
@@ -147,6 +160,7 @@ namespace {
                 }
             }
 
+            self::$_app_need_inited = false;
             Debugger::status('app_init_done');
         }
 
@@ -158,6 +172,8 @@ namespace {
          */
         public static function start(array $config=null){
             self::$_app_need_inited and self::init($config);
+
+            //执行服务端程序
             Debugger::status('app_start');
 //            $identify = md5($_SERVER['HTTP_HOST'].$_SERVER['REQUEST_URI']);
             $identify = self::$config['CACHE_URL_ON']?str_replace('/','_',"{$_SERVER['HTTP_HOST']}-{$_SERVER['REQUEST_URI']}"):null;
@@ -166,12 +182,10 @@ namespace {
             if(null !== $content){
                 Debugger::trace('load from url cache');
                 echo $content;
-            }
-            else{
+            } else{
                 //打开输出控制缓冲
-                ob_start();
+                Cache::begin($identify);
 
-                Router::__initializationize();
                 //parse uri
                 $result = self::$config['ROUTE_ON']?Router::parseRoute():null;
                 $result or $result = Router::parseURL();
@@ -195,19 +209,21 @@ namespace {
                     define('PINDEX_REQUEST_ACTION',$ckres['a']);//请求的操作
 
                     $result = Dispatcher::exec();
-                    echo $content = Response::getOutput();
-
                     //exec的结果将用于判断输出缓存，如果为int，表示缓存时间，0表示无限缓存XXX,将来将创造更多的扩展，目前仅限于int
 
                     if(isset($result)){
                         if (0 == $result) $result = ONE_DAY;//'无限缓存' will cause some problem
                         //it will not dispear if time not expire, remove it by hand in runtime directory!
                         if(self::$config['CACHE_URL_ON']){
-                            Cache::set($identify,$content,$result)?Debugger::trace('build url cache success!'):Debugger::trace('failed to build cache!');
+                            echo Cache::end($result,$identify);
+                            Debugger::trace('build url cache done!');
                         }
                         if(self::$config['CACHE_PATH_ON']){
-                            Cache::set($pidentify,$content,$result)?Debugger::trace('build path cache success!'):Debugger::trace('failed to build cache!');
+                            echo Cache::end($result,$identify);
+                            Debugger::trace('build path cache done!');
                         }
+                    }else{
+                        Debugger::trace('flush streightly!');
                     }
                 }
             }
@@ -247,12 +263,9 @@ namespace {
 }
 
 namespace Pindex {
-
-
     use Pindex\Core\Configger;
-    use Pindex\Util\Helper\XMLHelper;
+    use Pindex\Core\Response;
     use Pindex\Util\Trace;
-
 
     class Utils {
 
@@ -335,12 +348,15 @@ namespace Pindex {
         }
 
         /**
+         * 调用类的静态方法
+         * 注意，调用callable的时候如果是静态方法，则不能带小括号，就像函数名称一样
+         *      例如：$callable = "{$clsnm}::{$method}";将永远返回false
          * @param string $clsnm class name
          * @param string $method method name
          * @return mixed|null
          */
         public static function callStatic($clsnm,$method){
-            $callable = "{$clsnm}::{$method}()";
+            $callable = "{$clsnm}::{$method}";
             if(is_callable($callable)){
                 try{
                     return $clsnm::$method();
@@ -454,6 +470,11 @@ namespace Pindex {
 
     }
 
+    /**
+     * Class Loader
+     * 类加载期间
+     * @package Pindex
+     */
     class Loader {
 
         /**
@@ -463,6 +484,8 @@ namespace Pindex {
         private static $_classes = [];
 
         public static function load($clsnm){
+            Debugger::trace("Class '{$clsnm}' __initializationized!");
+//            dump($clsnm,debug_backtrace(),class_exists($clsnm,false));
             if(isset(self::$_classes[$clsnm])) {
                 include_once self::$_classes[$clsnm];
             }else{
@@ -475,157 +498,10 @@ namespace Pindex {
                     if(is_file($path)) include_once self::$_classes[$clsnm] = $path;
                 }
             }
+//            dump(class_exists($clsnm,false));
+
             //auto config class,defined by commoon
             Utils::callStatic($clsnm,'__initializationize');
-        }
-    }
-
-
-
-    class Response {
-
-        /**
-         * 返回的消息类型
-         */
-        const MESSAGE_TYPE_SUCCESS = 1;
-        const MESSAGE_TYPE_WARNING = -1;
-        const MESSAGE_TYPE_FAILURE = 0;
-
-        /**
-         * 清空输出缓存
-         * @return void
-         */
-        public static function cleanOutput(){
-            ob_get_level() > 0 and ob_end_clean();
-        }
-
-        /**
-         * flush the cache to client
-         */
-        public static function flushOutput(){
-            ob_get_level() and ob_end_flush();
-        }
-
-        /**
-         * @param bool $clean
-         * @return string
-         */
-        public static function getOutput($clean=true){
-            if(ob_get_level()){
-                $content = ob_get_contents();
-                $clean and ob_end_clean();
-                return $content;
-            }else{
-                return '';
-            }
-        }
-
-        /**
-         * HTTP Protocol defined status codes
-         * @param int $code
-         * @param string $message
-         */
-        public static function sendHttpStatus($code,$message='') {
-            static $_status = null;
-            if(!$message){
-                $_status or $_status = array(
-                    // Informational 1xx
-                    100 => 'Continue',
-                    101 => 'Switching Protocols',
-
-                    // Success 2xx
-                    200 => 'OK',
-                    201 => 'Created',
-                    202 => 'Accepted',
-                    203 => 'Non-Authoritative Information',
-                    204 => 'No Content',
-                    205 => 'Reset Content',
-                    206 => 'Partial Content',
-
-                    // Redirection 3xx
-                    300 => 'Multiple Choices',
-                    301 => 'Moved Permanently',
-                    302 => 'Found',  // 1.1
-                    303 => 'See Other',
-                    304 => 'Not Modified',
-                    305 => 'Use Proxy',
-                    // 306 is deprecated but reserved
-                    307 => 'Temporary Redirect',
-
-                    // Client Error 4xx
-                    400 => 'Bad Request',
-                    401 => 'Unauthorized',
-                    402 => 'Payment Required',
-                    403 => 'Forbidden',
-                    404 => 'Not Found',
-                    405 => 'Method Not Allowed',
-                    406 => 'Not Acceptable',
-                    407 => 'Proxy Authentication Required',
-                    408 => 'Request Timeout',
-                    409 => 'Conflict',
-                    410 => 'Gone',
-                    411 => 'Length Required',
-                    412 => 'Precondition Failed',
-                    413 => 'Request Entity Too Large',
-                    414 => 'Request-URI Too Long',
-                    415 => 'Unsupported Media Type',
-                    416 => 'Requested Range Not Satisfiable',
-                    417 => 'Expectation Failed',
-
-                    // Server Error 5xx
-                    500 => 'Internal Server Error',
-                    501 => 'Not Implemented',
-                    502 => 'Bad Gateway',
-                    503 => 'Service Unavailable',
-                    504 => 'Gateway Timeout',
-                    505 => 'HTTP Version Not Supported',
-                    509 => 'Bandwidth Limit Exceeded'
-                );
-                $message = isset($_status[$code])?$_status[$code]:'';
-            }
-            ob_get_level() > 0 and ob_end_clean();
-            header("HTTP/1.1 {$code} {$message}");
-        }
-
-        /**
-         * 向浏览器客户端发送不缓存命令
-         * @param bool $clean clean the output before,important and default to true
-         * @return void
-         */
-        public static function sendNocache($clean=true){
-            $clean and ob_get_level() > 0 and ob_end_clean();
-            header( 'Expires: Mon, 26 Jul 1997 05:00:00 GMT' );
-            header( 'Last-Modified: ' . gmdate( 'D, d M Y H:i:s' ) . ' GMT' );
-            header( 'Cache-Control: no-store, no-cache, must-revalidate' );
-            header( 'Cache-Control: post-check=0, pre-check=0', false );
-            header( 'Pragma: no-cache' );
-        }
-        /**
-         * return the request in ajax way
-         * and call this method will exit the script
-         * @access protected
-         * @param mixed $data general type of data
-         * @param int $type AJAX返回数据格式
-         * @param int $options 传递给json_encode的option参数
-         * @return void
-         * @throws \Exception
-         */
-        public static function ajaxBack($data, $type = AJAX_JSON, $options = 0){
-            ob_get_level() > 0 and ob_end_clean();
-            Debugger::closeTrace();
-            switch (strtoupper($type)) {
-                case AJAX_JSON :// 返回JSON数据格式到客户端 包含状态信息
-                    header('Content-Type:application/json; charset=utf-8');
-                    exit(json_encode($data, $options));
-                case AJAX_XML :// 返回xml格式数据
-                    header('Content-Type:text/xml; charset=utf-8');
-                    exit(XMLHelper::encode($data));
-                case AJAX_STRING:
-                    header('Content-Type:text/plain; charset=utf-8');
-                    exit($data);
-                default:
-                    PindexException::throwing('Invalid output type!');
-            }
         }
     }
 
@@ -694,7 +570,6 @@ namespace Pindex {
          * @return void
          */
         final public static function handleError($errno,$errstr,$errfile,$errline){
-            PINDEX_DEBUG_MODE_ON and exit($errstr);
             PINDEX_EXCEPTION_CLEAN and ob_get_level() > 0 and ob_end_clean();
             if(!is_string($errstr)) $errstr = serialize($errstr);
             $trace = debug_backtrace();
@@ -776,36 +651,47 @@ namespace Pindex {
          * @param ...
          * @return string|bool
          */
-        public static function trace($message=null){
+        public static function trace($message){
+            static $index = 0;
+
             if(!PINDEX_DEBUG_MODE_ON) return false;
-            if(null === $message and self::$_allowTrace){
+            $location = debug_backtrace();
+            if(isset($location[0])){
+                $location = "{$location[0]['file']}:{$location[0]['line']}";
+            }else{
+                $location = $index ++;
+            }
+            if(func_num_args() > 1) $message = var_export(func_get_args(),true);
+            if(!is_string($message)) $message = var_export($message,true);
+            if(isset(self::$_traces[$location])){
+                //同一个位置可能调用了多次
+                $index ++;
+                $location = "$location ($index)";
+            }
+            return self::$_traces[$location] = $message;
+        }
+
+        public static function showTrace(){
+            if(self::$_allowTrace){
                 return Trace::show(self::$keyworks,self::$_traces,self::$_status);
             }else{
-                $location = debug_backtrace();
-                $location = "{$location[0]['file']}:{$location[0]['line']}";
-                if(func_num_args() > 1) $message = var_export(func_get_args(),true);
-                if(!is_string($message)) $message = var_export($message,true);
-                return self::$_traces[$location] = $message;
+                return false;
             }
         }
 
     }
 
-
+    /**
+     * Class AutoConfig
+     * 自动类初始化
+     * @package Pindex
+     */
     trait AutoConfig {
         /**
          * 类的静态配置
          * @var array
          */
         private static $_cs = [];
-        /**
-         * @var array map of class fullname of its config name
-         */
-        private static $_map = [];
-        /**
-         * @var array
-         */
-        private static $_cache = null;
 
         /**
          * initialize the class with config
@@ -822,8 +708,6 @@ namespace Pindex {
                 //load the outer config
                 $conf = Configger::load($clsnm);
                 $conf and is_array($conf) and self::$_cs[$clsnm] = Utils::merge(self::$_cs[$clsnm],$conf,true);
-
-                Debugger::trace("Class '{$clsnm}' __initializationized!");
             }
             //auto init
             Utils::callStatic($clsnm,'__init');
@@ -835,10 +719,10 @@ namespace Pindex {
          * @param mixed $replacement 找不到对应配置时的默认配置
          * @return array
          */
-        final protected static function &getConfig($name=null,$replacement=null){
+        final protected static function getConfig($name=null,$replacement=null){
             $clsnm = static::class;
             isset(self::$_cs[$clsnm]) or self::$_cs[$clsnm] = [];
-            return isset($name) ? (isset(self::$_cs[$clsnm][$name])?self::$_cs[$clsnm][$name]:$replacement) : isset(self::$_cs[$clsnm])?self::$_cs[$clsnm]:$replacement;
+            return isset($name) ? (isset(self::$_cs[$clsnm][$name])?self::$_cs[$clsnm][$name]:$replacement) : (isset(self::$_cs[$clsnm])?self::$_cs[$clsnm]:$replacement);
         }
 
         /**
@@ -853,6 +737,11 @@ namespace Pindex {
 
     }
 
+    /**
+     * Class AutoInstance
+     * 自动类实例管理
+     * @package Pindex
+     */
     trait AutoInstance {
         /**
          * @var array 驱动列表
@@ -931,19 +820,18 @@ namespace Pindex {
         }
     }
 
-
     /**
      * Class Lite
      * @property array $config
      *  'sample class' => [
-     *      'PRIOR_INDEX' => 0,//默认驱动ID，类型限定为int或者string
+     *      'DRIVER_DEFAULT_INDEX' => 0,//默认驱动ID，类型限定为int或者string
      *      'DRIVER_CLASS_LIST' => [],//驱动类的列表
      *      'DRIVER_CONFIG_LIST' => [],//驱动类列表参数
      *  ]
-     * @package PLite
+     * @package Pindex
      */
-    abstract class Lite {
-        use AutoConfig , AutoInstance;
+    abstract class Lite{
+        use AutoInstance,AutoConfig;
 
         /**
          * 类实例的驱动
@@ -988,7 +876,6 @@ namespace Pindex {
                     PindexException::throwing("找不到类'{$clsnm}'关于'{$identify}'的驱动！");
                 }
             }
-
             return self::$_drivers[$clsnm][$identify];
         }
 
@@ -1007,5 +894,4 @@ namespace Pindex {
             return call_user_func_array([$driver, $method], $arguments);
         }
     }
-
 }

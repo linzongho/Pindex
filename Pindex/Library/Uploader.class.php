@@ -48,9 +48,9 @@ class Uploader extends Lite{
 
     const CONF_NAME = 'uploader';
     const CONF_CONVENTION = [
-        'PRIOR_INDEX' => 0,//默认驱动ID，类型限定为int或者string
+        'DRIVER_DEFAULT_INDEX' => 0,//默认驱动ID，类型限定为int或者string
         'DRIVER_CLASS_LIST' => [
-            'PLite\\Library\\Uploader\\Local',
+            'Pindex\\Library\\Uploader\\Local',
         ],//驱动类的列表
         'DRIVER_CONFIG_LIST' => [],//驱动类列表参数
 
@@ -174,10 +174,10 @@ class Uploader extends Lite{
         if(function_exists('finfo_open')){
             $finfo   =  finfo_open ( FILEINFO_MIME_TYPE );
         }
-//        \PLite\dumpout($finfo,$files);
+//        \Pindex\dumpout($finfo,$files);
         foreach ($this->dealFiles($files) as $key => $file) {
             $file['name']  = strip_tags($file['name']);
-//            \PLite\dumpout($savepath);
+//            \Pindex\dumpout($savepath);
             $file['savepath'] = $savepath;
             if(!isset($file['key']))   $file['key']    =   $key;
             /* 通过扩展获取文件类型，可解决FLASH上传$FILES数组返回文件类型错误的问题 */
@@ -250,7 +250,7 @@ class Uploader extends Lite{
      * @return array
      */
     private function dealFiles($files) {
-//        \PLite\dump($_FILES);
+//        \Pindex\dump($_FILES);
         $fileArray  = [];
         $n          = 0;
         foreach ($files as $index=>$file){
@@ -269,7 +269,7 @@ class Uploader extends Lite{
                 break;
             }
         }
-//        \PLite\dumpout($fileArray);
+//        \Pindex\dumpout($fileArray);
         return $fileArray;
     }
 

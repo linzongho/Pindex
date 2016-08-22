@@ -149,7 +149,7 @@ class Network {
         if($file){
             $basename = pathinfo($file,PATHINFO_BASENAME);
             $dir = realpath(dirname($file));
-//            \PLite\dumpout($file,realpath(dirname($file)),is_dir(realpath($dir)));
+//            \Pindex\dumpout($file,realpath(dirname($file)),is_dir(realpath($dir)));
         }else{
             $basename = md5($url.PINDEX_REQUEST_MICROTIME);//应对变化的事件
             $dir = PINDEX_PATH_PUBLIC.'/download';
@@ -313,7 +313,7 @@ class Network {
         curl_setopt($cl, CURLOPT_POSTFIELDS, json_encode($fields));
         curl_setopt($cl, CURLOPT_RETURNTRANSFER, true );
         $content = curl_exec($cl);
-//        \PLite\dumpout(curl_getinfo($cl),$content,$fields);
+//        \Pindex\dumpout(curl_getinfo($cl),$content,$fields);
         curl_close($cl);
         if(false === $content){
 //            $status = curl_getinfo($cl);//(isset($status['http_code']) && $status['http_code'] == 200)

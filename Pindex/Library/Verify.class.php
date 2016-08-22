@@ -12,7 +12,13 @@ namespace Pindex\Library;
 use Pindex\AutoConfig;
 use Pindex\PindexException;
 
+/**
+ * Class Verify
+ * extends 验证码
+ * @package Pindex\Library
+ */
 class Verify {
+
     use AutoConfig;
 
     const CONF_NAME = 'verify';

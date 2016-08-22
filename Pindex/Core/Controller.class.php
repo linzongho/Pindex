@@ -98,18 +98,18 @@ class Controller {
             $context = self::$_context;
         }else{
             $context = SEK::parseLocation($template);
-//            \PLite\dump($context,self::$_context);
+//            \Pindex\dump($context,self::$_context);
             $context['t'] or empty(self::$_context['t']) or $context['t'] = self::$_context['t'];
             $context['m'] or empty(self::$_context['m']) or $context['m'] = self::$_context['m'];
             $context['c'] or empty(self::$_context['c']) or $context['c'] = self::$_context['c'];
             $context['a'] or empty(self::$_context['a']) or $context['a'] = self::$_context['a'];
         }
-//        \PLite\dumpout($context);
+//        \Pindex\dumpout($context);
         //模板变量导入
         View::assign($this->_tVars);
         //格式化模板变量
         Debugger::status('display_begin');
-//        \PLite\dumpout($context);
+//        \Pindex\dumpout($context);
         View::display($context,$cache_id,$compile_id,$parent);
         Debugger::status('display_end');
     }

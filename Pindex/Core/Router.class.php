@@ -7,7 +7,6 @@
  * Time: 10:55 AM
  */
 namespace Pindex\Core;
-
 use Pindex\AutoConfig;
 use Pindex\Debugger;
 use Pindex\PindexException;
@@ -211,6 +210,7 @@ class Router {
      */
     public static function parseURL($uri=null,$hostname=null){
         $_config = self::getConfig();
+
         //API模式下
         if($_config['API_MODE_ON']){
             self::parseInAPI();
@@ -420,7 +420,7 @@ class Router {
             }else{
                 $hostname = $_SERVER['SERVER_NAME'];
             }
-//            \PLite\dumpout($modules);
+//            \Pindex\dumpout($modules);
             $uri = self::getBasicUrl(null,$hostname).'/'.
                 self::createInCommon($moduleUsed?null:$modules,$contler,$action,$params);
         }
@@ -485,7 +485,7 @@ class Router {
         $uri = '';
         $_config = self::getConfig();
         $modules and $uri .= is_array($modules)?implode($_config['MM_BRIDGE'],$modules):$modules;
-//        \PLite\dumpout($modules,$uri);
+//        \Pindex\dumpout($modules,$uri);
         $contler and $uri .= ''===$uri?$contler:$_config['MC_BRIDGE'].$contler;
         $action and $uri .= $_config['CA_BRIDGE'].$action;
         $params and $uri .= $_config['AP_BRIDGE'].self::toParametersString($params,$_config['PP_BRIDGE'],$_config['PKV_BRIDGE']);
@@ -572,13 +572,13 @@ class Router {
         }
         $parts = @explode('/',trim($url,'/'));
 
-//        \PLite\dumpout($hash,$url,$parts);
+//        \Pindex\dumpout($hash,$url,$parts);
         //调用URLHelper创建URL
         $action  = array_pop($parts);
         $ctler   = $action?array_pop($parts):null;
         $modules = $ctler?$parts:null;
         $url = self::create($modules,$ctler,$action,$params);
-//        \PLite\dumpout($modules,$ctler,$action,$url);
+//        \Pindex\dumpout($modules,$ctler,$action,$url);
         if($hash) $url .= '#'.$hash;
         return $url;
     }

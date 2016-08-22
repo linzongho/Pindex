@@ -252,10 +252,10 @@ class Think implements ViewInterface {
         if($this->config['CACHE_ON'] and $this->config['CACHE_EXPIRE'] > 0 and is_file($tmplCacheFile)){
             $lastmtime = Storage::mtime($tmplCacheFile);
             //缓存开启并且缓存文件存在的情况下价差缓存是否过期
-//            \PLite\dumpout($lastmtime,$this->config['CACHE_EXPIRE'],$_SERVER['REQUEST_TIME']);
+//            \Pindex\dumpout($lastmtime,$this->config['CACHE_EXPIRE'],$_SERVER['REQUEST_TIME']);
             if($lastmtime + $this->config['CACHE_EXPIRE'] > $_SERVER['REQUEST_TIME']){//缓存期未结束
                 if($this->config['CACHE_UPDATE_CHECK']){
-//                    \PLite\dumpout($templateFile,$tmplCacheFile,Storage::mtime($templateFile),Storage::mtime($tmplCacheFile));
+//                    \Pindex\dumpout($templateFile,$tmplCacheFile,Storage::mtime($templateFile),Storage::mtime($tmplCacheFile));
                     if(Storage::mtime($templateFile) < $lastmtime){//模板文件更新
                         return $tmplCacheFile;
                     }
@@ -394,7 +394,7 @@ class Think implements ViewInterface {
         $end        =   $this->config['TAGLIB_END'];
         // 读取模板中的继承标签
         $find       =   preg_match('/'.$begin.'extend\s(.+?)\s*?\/'.$end.'/is',$content,$matches);
-//        \PLite\dumpout($begin,$end,$matches);
+//        \Pindex\dumpout($begin,$end,$matches);
         if($find) {
             //替换extend标签
             $content    =   str_replace($matches[0],'',$content);
@@ -776,7 +776,7 @@ class Think implements ViewInterface {
                 //现在解析规则改为 PATH_BASE.'Application'.'#相对于Application目录的位置#';
                 $templateName .= $this->config['TEMPLATE_SUFFIX'];
             }
-//            \PLite\dump($templateName,dirname($this->template).'/'.$templateName);
+//            \Pindex\dump($templateName,dirname($this->template).'/'.$templateName);
             if(strpos($templateName,'/') !== 0){
                 //Relative path
                 $templateName = realpath(dirname($this->template).'/'.$templateName);
@@ -1563,12 +1563,12 @@ $mod = ($'.$key.' % '.$mod.' );
         $index  = empty($attr['index'])?'index':$attr['index'];
 
         $parseStr   =  "<?php 
-                            isset(\$_dao) or \$_dao = \\PLite\\Core\\Dao::getInstance();
+                            isset(\$_dao) or \$_dao = \\Pindex\\Core\\Dao::getInstance();
                             \$params = {$params};
                             \$sql = '{$sql}';
                             \$list = \$_dao->query(\$sql,\$params);
                             if(false ===\$list){
-                                \\PLite\\Library\\Logger::write(\"failed to get article with sql:{$sql}\");
+                                \\Pindex\\Library\\Logger::write(\"failed to get article with sql:{$sql}\");
                                 echo \"{$error}\";
                             }elseif(empty(\$list)){
                                 echo \"{$empty}\";

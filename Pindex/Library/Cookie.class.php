@@ -13,7 +13,9 @@ use Pindex\AutoConfig;
 use Pindex\PindexException;
 
 class Cookie {
+
     use AutoConfig;
+
     const CONF_NAME = 'cookie';
     const CONF_CONVENTION = [
         // cookie 名称前缀
@@ -162,5 +164,4 @@ class Cookie {
             }
         }
     }
-
 }

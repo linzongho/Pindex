@@ -17,7 +17,7 @@ use Pindex\Lite;
  * <code>
  *      $page = new Page(1225,20);
  *      echo $page->show('',true);
- *      \PLite\dumpout(
+ *      \Pindex\dumpout(
  *          $page->getFirstRow(),
  *          $page->getPageSize(),
  *          $page->getNowPage()
