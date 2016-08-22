@@ -7,10 +7,9 @@
  * Time: 11:40 AM
  */
 
-namespace Pindex\Library;
+namespace Pindex\Core;
 use Pindex\Lite;
 use Pindex\PindexException;
-
 
 /**
  * Interface LogInterface 日志接口
@@ -42,41 +41,25 @@ interface LoggerInterface {
  */
 class Logger extends Lite {
 
-    // 日志级别 从上到下，由低到高
-    const EMERG     = 'EMERG';  // 严重错误: 导致系统崩溃无法使用
-    const ALERT     = 'ALERT';  // 警戒性错误: 必须被立即修改的错误
-    const CRIT      = 'CRIT';  // 临界值错误: 超过临界值的错误，例如一天24小时，而输入的是25小时这样
-    const ERR       = 'ERR';  // 一般错误: 一般性错误
-    const WARN      = 'WARN';  // 警告性错误: 需要发出警告的错误
-    const NOTICE    = 'NOTIC';  // 通知: 程序可以运行但是还不够完美的错误
-    const INFO      = 'INFO';  // 信息: 程序输出信息
-    const DEBUG     = 'DEBUG';  // 调试: 调试信息
-    const SQL       = 'SQL';  // SQL：SQL语句 注意只在调试模式开启时有效
-
-    // 日志信息
-    private static $log       =  [];
+    /**
+     * @var array 日志信息
+     */
+    private static $records       =  [];
 
     const CONF_NAME = 'log';
     const CONF_CONVENTION = [
         'DRIVER_DEFAULT_INDEX' => 0,//默认的驱动标识符，类型为int或者string
         'DRIVER_CLASS_LIST' => [
-            'Pindex\\Library\\Logger\\File',
+            'Pindex\\Core\\Logger\\File',
         ],//驱动类列表
-
-        'LOG_RATE'      => Logger::LOGRATE_DAY,
+        'RATE'      => Logger::LOGRATE_DAY,
         //Think\Log
-        'LOG_TIME_FORMAT'   =>  ' c ',
-        'LOG_FILE_SIZE'     =>  2097152,
-        'LOG_PATH'  => PINDEX_PATH_RUNTIME.'/Log',
+        'TIME_FORMAT'   =>  ' c ',
+        'FILE_SIZE'     =>  2097152,
+        'PATH'  => PINDEX_PATH_RUNTIME.'/Log',
         // 允许记录的日志级别
-        'LOG_LEVEL'         =>  true,//'EMERG,ALERT,CRIT,ERR,WARN,NOTIC,INFO,DEBUG,SQL',
+        'LEVEL'         =>  true,//'EMERG,ALERT,CRIT,ERR,WARN,NOTIC,INFO,DEBUG,SQL',
     ];
-
-    /**
-     * 系统预设的级别，用户也可以自定义
-     */
-    const LOG_LEVEL_DEBUG = 'Debug';//错误和调试
-    const LOG_LEVEL_TRACE = 'Trace';//记录日常操作的数据信息，以便数据丢失后寻回
 
     /**
      * 日志频率
@@ -87,18 +70,28 @@ class Logger extends Lite {
     const LOGRATE_DAY = 1;
 
     /**
+     * 系统预设的级别，用户也可以自定义
+     */
+    const LEVEL_DEBUG   = 'Debug';//错误和调试
+    const LEVEL_NOTICE  = 'Notice';
+    const LEVEL_INFO    = 'Info';
+    const LEVEL_WARN    = 'Warn';
+    const LEVEL_ERROR   = 'Error';
+    const LEVEL_RECORD  = 'Record';//记录日常操作的数据信息，以便数据丢失后寻回
+
+    /**
      * 获取日志文件的UID（Unique Identifier）
      * @param string $level 日志界别
      * @param string $datetime 日志时间标识符，如“2016-03-17/09”日期和小时之间用'/'划分
      * @return string 返回UID
      * @throws PindexException
      */
-    protected static function fetchLogUID($level=self::LOG_LEVEL_DEBUG,$datetime=null){
+    protected static function getLogName($level=self::LEVEL_DEBUG,$datetime=null){
         if(isset($datetime)){
             $path = PINDEX_PATH_RUNTIME."/Log/{$level}/{$datetime}.log";
         }else{
             $date = date('Y-m-d');
-            $rate = (self::getConfig())['LOG_RATE'];
+            $rate = (self::getConfig())['RATE'];
             $rate or $rate = self::LOGRATE_DAY;
             switch($rate){
                 case self::LOGRATE_DAY:
@@ -123,8 +116,9 @@ class Logger extends Lite {
      * @return string 写入内容返回
      * @Exception FileWriteFailedException
      */
-    public static function write($content,$level=self::LOG_LEVEL_DEBUG){
-        return self::driver()->write(self::fetchLogUID($level),$content);
+    public static function write($content,$level=self::LEVEL_DEBUG){
+        is_string($content) or $content = var_export($content,true);
+        return self::driver()->write(self::getLogName($level),$content);
     }
 
     /**
@@ -134,88 +128,68 @@ class Logger extends Lite {
      * @param null|string $level 日志级别
      * @return string|array 如果按小时写入，则返回数组
      */
-    public static function read($datetime, $level=self::LOG_LEVEL_DEBUG){
-        return self::driver()->read(self::fetchLogUID($level,$datetime));
+    public static function read($datetime, $level=self::LEVEL_DEBUG){
+        return self::driver()->read(self::getLogName($level,$datetime));
     }
 
-    /**
-     * 写入DEBUG信息到日志中
-     * @param ...
-     * @return void
-     */
-    public static function debug(){
-        $content = '';
-        $params = func_get_args();
-        foreach($params as $val){
-            $content .= var_export($val,true);
-        }
-        self::write($content,self::LOG_LEVEL_DEBUG);
-    }
-
+//----------------------------------------------------------------------------------------------------------//
     /**
      * 记录日志 并且会过滤未经设置的级别
      * @static
      * @access public
      * @param string $message 日志信息
      * @param string $level  日志级别
-     * @param boolean $record  是否强制记录
+     * @param boolean $force  是否强制记录
      * @return $this
      */
-    public static function record($message,$level=self::ERR,$record=false) {
-        if($record ){
-            self::$log[] =   "{$level}: {$message}\r\n";
-        }else{
-            $allowlevel = (self::getConfig())['LOG_LEVEL'];
-            if(true === $allowlevel or false !== strpos($allowlevel,$level)) {
-                self::$log[] =   "{$level}: {$message}\r\n";
-            }
+    public static function record($message, $level=self::LEVEL_INFO, $force=false) {
+        static $allowlevel = null;
+        null === $allowlevel and $allowlevel = self::getConfig('LEVEL');
+        if($force or $allowlevel or false !== strpos($allowlevel,$level)){
+            self::$records[] =   "{$level}: {$message}\r\n";
         }
     }
 
     /**
-     * 日志保存
+     * 保存record记录的信息，该函数无需手动调用
      * @static
      * @access public
      * @param string $destination  写入目标
      * @return void
      */
     public static function save($destination='') {
-        if(empty(self::$log)) return ;
-
-        $config = self::getConfig();
-
-        if(empty($destination)){
-            $destination = $config['LOG_PATH'].date('y_m_d').'.log';
+        if(!empty(self::$records)){
+            $message    =   implode('',self::$records);
+            self::_write($message,$destination);
+            // 保存后清空日志缓存
+            self::$records = array();
         }
-        $message    =   implode('',self::$log);
-        self::_write($message,$destination);
-        // 保存后清空日志缓存
-        self::$log = array();
     }
 
     /**
      * 日志写入接口
      * @access public
      * @param string $log 日志信息
-     * @param string $destination  写入目标
+     * @param string $destination 写入文件
      * @return void
      */
     public static function _write($log,$destination='') {
         $config = self::getConfig();
-        $now = date($config['LOG_TIME_FORMAT']);
-        if(empty($destination)){
-            $destination = $config['LOG_PATH'].date('y_m_d').'.log';
-        }
+        $now = date($config['TIME_FORMAT']);
+        $destination or $destination = self::getLogName(self::LEVEL_RECORD);
         // 自动创建日志目录
         $log_dir = dirname($destination);
         if (!is_dir($log_dir)) {
             mkdir($log_dir, 0755, true);
         }
         //检测日志文件大小，超过配置大小则备份日志文件重新生成
-        if(is_file($destination) && floor($config['LOG_FILE_SIZE']) <= filesize($destination) ){
-            rename($destination,dirname($destination).'/'.time().'-'.basename($destination));
-        }
+//        if(is_file($destination) && floor($config['FILE_SIZE']) <= filesize($destination) ){
+//            rename($destination,dirname($destination).'/'.time().'-'.basename($destination));
+//        }
         error_log("[{$now}] ".$_SERVER['REMOTE_ADDR'].' '.$_SERVER['REQUEST_URI']."\r\n{$log}\r\n", 3,$destination);
     }
-
 }
+//一旦该类加载进来，那么这段语句必定执行，无需手动调用
+register_shutdown_function(function(){
+    Logger::save();
+});
