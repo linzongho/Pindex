@@ -6,11 +6,11 @@
  * Date: 8/23/16
  * Time: 5:17 PM
  */
-namespace {
-    //只有在本类加载进去的时候以下常量才会进入内存中
-    const SITUATION_ADMIN = 'situation_of_background';
-    const SITUATION_HOME = 'situation_of_forehandground';
-}
+//namespace {
+//    //只有在本类加载进去的时候以下常量才会进入内存中
+//    const SITUATION_ADMIN = 'situation_of_background';
+//    const SITUATION_HOME = 'situation_of_forehandground';
+//}
 
 namespace Shirley{
 
@@ -58,21 +58,32 @@ namespace Shirley{
          * @var array 用户的登录信息
          */
         private static $info = null;
+        /**
+         * @var string
+         */
+        private static $username = null;
 
         /**
          * 检查在该场景中用户是否处于登录状态
          * @static
-         * @param string $situation 登录场景
+         * @param string $username 登录的账户名称
          * @return bool
          */
-        public static function check($situation){
-            $status = Session::get($situation);//return null if not set
+        public static function check($username=null){
+            if(null === $username){
+                if(null === self::$username){
+                    return false;
+                }else{
+                    $username = self::$username;
+                }
+            }
+            $status = Session::get($username);//return null if not set
             if(!$status){
                 //未登录时检查cookie中是否记录账户要求rememeber的未过期的信息
-                $cookie = Cookie::get($situation);
+                $cookie = Cookie::get($username);
                 if($cookie){
-                    $usrinfo = unserialize(Base64::decrypt($cookie, $situation));
-                    Session::set($situation, $usrinfo);
+                    $usrinfo = unserialize(Base64::decrypt($cookie, $username));
+                    Session::set($username, $usrinfo);
                     return true;
                 }
             }
@@ -81,34 +92,38 @@ namespace Shirley{
 
         /**
          * 获取当前登录的账户的信息
-         * @static
-         * @return array|null
+         * @param null $node
+         * @return mixed|null 信息不存在时返回null
          */
-        public static function info(){
+        public static function getUserinfo($node=null){
+            if(!self::$info){
+                if(null === self::$username){
+                    return false;
+                }else{
+                    self::$info = Session::get(self::$username);
+                    if(null === self::$info){
+                        //用户未登录,按照情况执行抛出异常操作或者返回null
+                        return false;//'用户未登录，无法执行该操作！'
+                    }
+                }
+            }
+
+            if($node){
+                return isset(self::$info[$node])?self::$info[$node]:null;
+            }
             return self::$info;
         }
-
-        /**
-         * 获取当前登录的账户名称
-         * @static
-         * @return mixed|null
-         */
-        public static function getUsername(){
-            return isset(self::$info['username'])? self::$info['username'] : null;
-        }
-
         /**
          * 执行登录操作
          * @static
          * @param string $username 用户名
          * @param string $password 密码
          * @param int $expire 记录时间，如果是0表示不记录
-         * @param string $situation 登录场景
          * @param LoginoutInterface $model
          * @return true|string 登录成功时返回true，否则返回错误信息
          */
-        public static function login($username,$password,$expire=0,$situation,LoginoutInterface $model=null){
-            if(self::check($situation)){
+        public static function login($username,$password,$expire=0,LoginoutInterface $model=null){
+            if(self::check($username)){
                 return '用户已经登录';
             }else{
                 $model and self::$model = $model;
@@ -117,10 +132,10 @@ namespace Shirley{
                     if($info){
                         if($expire){
                             $sinfo = serialize($info);
-                            $cookie = Base64::encrypt($sinfo, $situation);
-                            Cookie::set($situation, $cookie, $expire);//一周的时间
+                            $cookie = Base64::encrypt($sinfo, $username);
+                            Cookie::set($username, $cookie, $expire);//一周的时间
                         }
-                        Session::set($situation, self::$info = $info);
+                        Session::set(self::$username = $username, self::$info = $info);
                         return true;
                     }else{
                         return $model->getLoginError();
@@ -131,18 +146,25 @@ namespace Shirley{
             }
         }
 
+        public static function remember($expire,$info=null){
+            if(null === $info){
+                $info = self::getUserinfo();
+
+            }
+        }
+
         /**
          * 注销登陆
-         * @param string $situation 登录场景
+         * @param string $username 登录账户名
          * @param LoginoutInterface $model
          * @return bool
          */
-        public static function logout($situation,LoginoutInterface $model=null){
+        public static function logout($username,LoginoutInterface $model=null){
             $model and self::$model = $model;
             if($model instanceof LoginoutInterface) {
                 if($model->logout()){
-                    Session::delete($situation);
-                    Cookie::clear($situation);
+                    Session::delete($username);
+                    Cookie::clear($username);
                     return true;
                 }
             }

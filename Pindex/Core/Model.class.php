@@ -455,7 +455,7 @@ class Model {
      * 查询一条数据，依据逐渐，如果数据不存在时返回false
      * @param int|string|array|null $keys
      * @param bool $getall 是否获取全部数据
-     * @return false|array 发生错误时返回false
+     * @return false|array 发生错误时返回false，找不到时返回空数组，否则返回一维的数据
      */
     public function find($keys=null,$getall=false){
         if(null === $keys){
