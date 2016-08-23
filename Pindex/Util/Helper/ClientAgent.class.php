@@ -128,4 +128,13 @@ class ClientAgent {
         (isset($_SERVER['SERVER_PORT']) and ('443' == $_SERVER['SERVER_PORT']));
     }
 
+    public static function isPhone(){
+        if(isset($_SERVER['HTTP_USER_AGENT']) and preg_match('/(up.browser|up.link|mmp|symbian|smartphone|midp|wap|phone|iphone|ipad|ipod|android|xoom)/i',
+                strtolower($_SERVER['HTTP_USER_AGENT']))){
+            return true;
+        }elseif((isset($_SERVER['HTTP_ACCEPT'])) and (strpos(strtolower($_SERVER['HTTP_ACCEPT']),'application/vnd.wap.xhtml+xml') !== false)){
+            return true;
+        }
+        return false;
+    }
 }

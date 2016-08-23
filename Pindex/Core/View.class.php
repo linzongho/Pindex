@@ -64,8 +64,8 @@ class View extends Lite {
     const CONF_CONVENTION = [
         'DRIVER_DEFAULT_INDEX' => 1,
         'DRIVER_CLASS_LIST' => [
-            'Pindex\\Library\\View\\Smarty',
-            'Pindex\\Library\\View\\Think',
+            'Pindex\\Core\\View\\Smarty',
+            'Pindex\\Core\\View\\Think',
         ],
         'DRIVER_CONFIG_LIST' => [
             [
@@ -112,7 +112,7 @@ class View extends Lite {
      * @return array 类型由参数三决定
      */
     public static function parseTemplatePath($context){
-        $path = PINDEX_PATH_BASE."/Application/{$context['m']}/View/{$context['c']}/";
+        $path = PINDEX_PATH_BASE.'/'.PINDEX_APP_NAME."/{$context['m']}/View/{$context['c']}/";
         isset($context['t']) and $path = "{$path}{$context['t']}/";
         $path = "{$path}{$context['a']}";
         return $path;

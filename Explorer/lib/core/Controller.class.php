@@ -5,11 +5,10 @@
 * @copyright warlee 2014.(Shanghai)Co.,Ltd
 * @license http://kalcaddle.com/tools/licenses/license.txt
 */
-
 /**
  * 控制器抽象类
  */
-abstract class Controller {
+abstract class Controller  {
 	public $in;
 	public $db;
 	public $config;	// 全局配置
@@ -30,50 +29,33 @@ abstract class Controller {
 		$this -> values['config'] = &$config;
 		$this -> values['in'] = &$in;
         $this -> assign('entry_name',ENTRY_NAME);
-	} 
-
-	/**
-	 * 加载模型
-	 * @param string $class 
-	 */
-	public function loadModel($class){
-		$args = func_get_args();
-		$this -> $class = call_user_func_array('init_model', $args);
-		return $this -> $class;
-	} 
-
-	/**
-	 * 加载类库文件
-	 * @param string $class 
-	 */
-	public function loadClass($class){
-		if (1 === func_num_args()) {
-			$this -> $class = new $class;
-		} else {
-			$reflectionObj = new ReflectionClass($class);
-			$args = func_get_args();
-			array_shift($args);
-			$this -> $class = $reflectionObj -> newInstanceArgs($args);
-		}
-		return $this -> $class;
 	}
 
-	/**
+    /**
 	 * 显示模板
-	 * 
-	 * TODO smarty
-	 * @param
-	 */
+     * @param array|string $key
+     * @param mixed|null $value
+     * @return void
+     */
 	protected function assign($key,$value){
 		$this->values[$key] = $value;
-	} 
+	}
 	/**
 	 * 显示模板
-	 * @param
-	 */
+     * @param string $tpl_file
+     * @return void
+     */
 	protected function display($tpl_file){
-		global $L,$LNG;
+		global $L;
 		extract($this->values);
 		require($this->tpl.$tpl_file);
-	} 
-} 
+//        $context = [
+//            'm' => '',
+//            'c' => static::class,
+//            'a' => SEK::backtrace(SEK::ELEMENT_FUNCTION,SEK::PLACE_FORWARD),
+//        ];
+//
+//        View::assign($this->values);
+//        View::display($context);
+	}
+}

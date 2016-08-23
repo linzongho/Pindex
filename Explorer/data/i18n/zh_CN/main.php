@@ -344,7 +344,7 @@ return array(
 	"ui_desktop"                 =>	"桌面",
 	"ui_explorer"           	 =>	"文件管理",
 	"ui_editor"                  =>	"编辑器",
-	"adminer"                    =>	"adminer",
+	"adminer"                    =>	"数据库",
 	"ui_project_home"            =>	"项目主页",
 	"ui_login"                   =>	"登录",
 	"ui_logout"                  =>	"退出",

@@ -14,8 +14,7 @@ Pindex::init([
     'APP_NAME'      => 'Explorer',
 ]);
 
-include '../Explorer/config/basic.php';
-$app = new Application();
+$app = new \Explorer\Application();
 
 //语言包加载：优先级：cookie获取>自动识别
 //首次没有cookie则自动识别——存入cookie,过期时间无限

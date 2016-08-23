@@ -8,11 +8,8 @@
  */
 
 namespace Pindex\Core;
-
-
 use Pindex\Debugger;
 use Pindex\PindexException;
-use Pindex\Response;
 use Pindex\Util\SEK;
 use Pindex\Utils;
 
@@ -22,13 +19,13 @@ class Controller {
      * 分配给模板的变量集合
      * @var array
      */
-    private $_tVars = [];
+    protected $_tVars = [];
 
     /**
      * 控制器上下文环境
      * @var array
      */
-    private static $_context = null;
+    protected static $_context = null;
 
     /**
      * 获取调用类的上下文环境
@@ -37,11 +34,11 @@ class Controller {
      * @return $this
      * @throws PindexException
      */
-    private static function fetchContext($clsnm=null){
+    protected static function fetchContext($clsnm=null){
         null === $clsnm and $clsnm = static::class;//get_called_class()
-        if(preg_match('/^Application\\\(.*)\\\Controller\\\(.*)$/',$clsnm,$matches)){
-            self::$_context['m'] = str_replace('\\','/',$matches[1]);
-            self::$_context['c'] = $matches[2];
+        if(preg_match('/^'.PINDEX_APP_NAME.'\\\(.*)\\\Controller\\\(.*)$/',$clsnm,$matches)){
+            static::$_context['m'] = str_replace('\\','/',$matches[1]);
+            static::$_context['c'] = $matches[2];
         }else{
             //如果出现名称空间不规范的情况，直接终止程序
             //一般会在调度器中检测不到类时抛出异常，所以这一步很难执行到
@@ -55,8 +52,8 @@ class Controller {
      * @return $this
      */
     protected function theme($tname){
-        isset(self::$_context) or self::fetchContext();
-        self::$_context['t'] = $tname;
+        isset(static::$_context) or static::fetchContext();
+        static::$_context['t'] = $tname;
         return $this;
     }
 
@@ -91,18 +88,18 @@ class Controller {
      * @return void
      */
     protected function display($template = null, $cache_id = null, $compile_id = null, $parent = null){
-        null === self::$_context and self::fetchContext();
+        null === static::$_context and static::fetchContext();
         //未设置时使用调用display的函数名称
         if(null === $template){//如果未设置参数一,获取当前调用方法的名称作为模板的默认名称
-            self::$_context['a'] = SEK::backtrace(SEK::ELEMENT_FUNCTION,SEK::PLACE_FORWARD);
-            $context = self::$_context;
+            static::$_context['a'] = SEK::backtrace(SEK::ELEMENT_FUNCTION,SEK::PLACE_FORWARD);
+            $context = static::$_context;
         }else{
             $context = SEK::parseLocation($template);
-//            \Pindex\dump($context,self::$_context);
-            $context['t'] or empty(self::$_context['t']) or $context['t'] = self::$_context['t'];
-            $context['m'] or empty(self::$_context['m']) or $context['m'] = self::$_context['m'];
-            $context['c'] or empty(self::$_context['c']) or $context['c'] = self::$_context['c'];
-            $context['a'] or empty(self::$_context['a']) or $context['a'] = self::$_context['a'];
+//            \Pindex\dump($context,static::$_context);
+            $context['t'] or empty(static::$_context['t']) or $context['t'] = static::$_context['t'];
+            $context['m'] or empty(static::$_context['m']) or $context['m'] = static::$_context['m'];
+            $context['c'] or empty(static::$_context['c']) or $context['c'] = static::$_context['c'];
+            $context['a'] or empty(static::$_context['a']) or $context['a'] = static::$_context['a'];
         }
 //        \Pindex\dumpout($context);
         //模板变量导入
@@ -161,7 +158,7 @@ class Controller {
      * @param string $title 显示标题
      */
     public function success($message,$waittime=1,$title='success'){
-        self::jump($message,$title,true,1,$waittime);
+        static::jump($message,$title,true,1,$waittime);
     }
 
     /**
@@ -171,7 +168,7 @@ class Controller {
      * @param string $title 显示标题
      */
     public function error($message,$waittime=3,$title='error'){
-        self::jump($message,$title,false,1,$waittime);
+        static::jump($message,$title,false,1,$waittime);
     }
 
 }

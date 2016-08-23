@@ -165,11 +165,12 @@ class Think implements ViewInterface {
      */
     public function display($context = null, $cache_id = null, $compile_id = null, $parent = null) {
         $template = View::parseTemplatePath($context);
+        $this->_context = $context;
         //模板常量
         defined('__ROOT__') or define('__ROOT__',Router::getBasicUrl());
-        defined('__MODULE__') or define('__MODULE__',PINDEX_PUBLIC_URL.'/'.PINDEX_REQUEST_MODULE);
-        defined('__CONTROLLER__') or define('__CONTROLLER__',__MODULE__.'/'.PINDEX_REQUEST_CONTROLLER);
-        defined('__ACTION__') or define('__ACTION__',__CONTROLLER__.'/'.PINDEX_REQUEST_ACTION);
+        defined('__MODULE__') or define('__MODULE__',PINDEX_PUBLIC_URL.'/'.$context['m']);
+        defined('__CONTROLLER__') or define('__CONTROLLER__',__MODULE__.'/'.$context['c']);
+        defined('__ACTION__') or define('__ACTION__',__CONTROLLER__.'/'.$context['a']);
 
         $this->_replacement['__ROOT__'] = __ROOT__; // 当前网站地址,带脚本名称
         $this->_replacement['__MODULE__'] = __MODULE__;
@@ -178,6 +179,11 @@ class Think implements ViewInterface {
 
         $template or PindexException::throwing('No template!');
 
+        if(false === strpos($template,$this->config['TEMPLATE_SUFFIX'])) {
+            $template .= $this->config['TEMPLATE_SUFFIX'];
+        }
+//        \Pindex\dump(is_file($template));
+//        \Pindex\dumpout($template);
         $this->fetch($this->template = $template,$this->_tVars);
     }
 
@@ -252,10 +258,8 @@ class Think implements ViewInterface {
         if($this->config['CACHE_ON'] and $this->config['CACHE_EXPIRE'] > 0 and is_file($tmplCacheFile)){
             $lastmtime = Storage::mtime($tmplCacheFile);
             //缓存开启并且缓存文件存在的情况下价差缓存是否过期
-//            \Pindex\dumpout($lastmtime,$this->config['CACHE_EXPIRE'],$_SERVER['REQUEST_TIME']);
             if($lastmtime + $this->config['CACHE_EXPIRE'] > $_SERVER['REQUEST_TIME']){//缓存期未结束
                 if($this->config['CACHE_UPDATE_CHECK']){
-//                    \Pindex\dumpout($templateFile,$tmplCacheFile,Storage::mtime($templateFile),Storage::mtime($tmplCacheFile));
                     if(Storage::mtime($templateFile) < $lastmtime){//模板文件更新
                         return $tmplCacheFile;
                     }
@@ -298,7 +302,7 @@ class Think implements ViewInterface {
             return $parseStr;
         }, $tmplContent);
         // 添加安全代码
-        $tmplContent =  '<?php if (!defined(\'PATH_BASE\')) exit();?>'.$tmplContent;
+        $tmplContent =  '<?php if (!defined(\'PINDEX_APP_NAME\')) exit(\'No Permission!\');?>'.$tmplContent;
         // 优化生成的php代码
         $tmplContent = str_replace('?><?php','',$tmplContent);
         //替换模板中的字符串
@@ -394,7 +398,6 @@ class Think implements ViewInterface {
         $end        =   $this->config['TAGLIB_END'];
         // 读取模板中的继承标签
         $find       =   preg_match('/'.$begin.'extend\s(.+?)\s*?\/'.$end.'/is',$content,$matches);
-//        \Pindex\dumpout($begin,$end,$matches);
         if($find) {
             //替换extend标签
             $content    =   str_replace($matches[0],'',$content);
@@ -776,7 +779,6 @@ class Think implements ViewInterface {
                 //现在解析规则改为 PATH_BASE.'Application'.'#相对于Application目录的位置#';
                 $templateName .= $this->config['TEMPLATE_SUFFIX'];
             }
-//            \Pindex\dump($templateName,dirname($this->template).'/'.$templateName);
             if(strpos($templateName,'/') !== 0){
                 //Relative path
                 $templateName = realpath(dirname($this->template).'/'.$templateName);

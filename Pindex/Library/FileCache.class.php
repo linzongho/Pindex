@@ -7,8 +7,8 @@
  * Time: 11:39 AM
  */
 namespace Pindex\Library;
+
 /**
- * Class FileCache
  * 数据的缓存存储类；key=>value 模式；value可以是任意类型数据。
  * 完整流程测试；读取最低5000次/s  含有写的1000次/s
  * add   添加单条数据；已存在则返回false
@@ -35,22 +35,14 @@ namespace Pindex\Library;
  *     查找方式删除  delete('group','','root');
  *     查找方式更新  update('group','system','root');
  *     查找方式获取  get('group','','root');
- * @package Pindex\Library
  */
 class FileCache {
-    /**
-     * @var array
-     */
-    private $data;
-    /**
-     * @var string file path
-     */
-    private $file;
 
-    /**
-     * FileCache constructor.
-     * @param string $file
-     */
+    const CONFIG_EXIT = '<?php exit;?>';
+
+
+    private $data;
+    private $file;
     function __construct($file) {
         $this->file = $file;
         $this->data= self::load($file);
@@ -59,6 +51,7 @@ class FileCache {
     /**
      * 重置所有数据；不传参数代表清空数据
      * @param array $list
+     * @return void
      */
     public function reset($list=array()){
         $this->data = $list;
@@ -116,9 +109,13 @@ class FileCache {
 
     /**
      * 更新数据;不存在;或者任意一条不存在则返回false;不进行保存
-     * @param string $k 为字符串；则根据key只更新一条数据
-     * @param  array $v array($key1,$key2,...),array($value1,$value2,...),则表示更新多条数据
-     * @param bool $search_value 设置时；表示以查找的方式更新数据中的数据
+     * $k $v string 为字符串；则根据key只更新一条数据
+     * $k $v array  array($key1,$key2,...),array($value1,$value2,...)
+     *              则表示更新多条数据
+     * $search_value 设置时；表示以查找的方式更新数据中的数据
+     * @param $k
+     * @param $v
+     * @param bool $search_value
      * @return bool
      */
     public function update($k,$v,$search_value=false){
@@ -170,7 +167,7 @@ class FileCache {
 
     /**
      * 删除;不存在返回false
-     * @param string $k
+     * @param $k
      * @param bool $search_value
      * @return bool
      */
@@ -203,8 +200,12 @@ class FileCache {
         return false;
     }
 
+
+
+    //=====================================================
     /**
      * 排序
+     * @static
      * @param $arr
      * @param $key
      * @param string $type
@@ -229,28 +230,34 @@ class FileCache {
 
     /**
      * 加载数据；并解析成程序数据
+     * @static
      * @param $file
      * @return array|mixed
      */
     public static function load($file){//10000次需要4s 数据量差异不大。
         if (!file_exists($file)) touch($file);
         $str = file_get_contents($file);
+        $str = substr($str, strlen(self::CONFIG_EXIT));
         $data= json_decode($str,true);
-        return isset($data)?$data:[];
+        if (is_null($data)) $data = array();
+        return $data;
     }
     /**
      * 保存数据；
+     * @static
      * @param $file
      * @param $data
+     * @return void
      */
     public static function save($file,$data){//10000次需要6s
         if (!$file) return;
         if (file_exists($file) && !is_writable($file)) {
-            PindexException::throwing("the path '{$file}' can not write!");
+            show_json('the path "data/" can not write!',false);
         }
         if($fp = fopen($file, "w")){
             if (flock($fp, LOCK_EX)) {  // 进行排它型锁定
-                fwrite($fp, json_encode($data));
+                $str = self::CONFIG_EXIT.json_encode($data);
+                fwrite($fp, $str);
                 fflush($fp);            // flush output before releasing the lock
                 flock($fp, LOCK_UN);    // 释放锁定
             }

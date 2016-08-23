@@ -81,18 +81,19 @@ class history{
 		}
 		if ($this->back!=0) {//有后退操作记录的情况下，进行插入。
 			$this->goedit($path);
-			return;
+			return null;
 		}		
 		if ($this->history[0]['path']=='') {//刚构造，不用加一.首位不前移
 			$this->history[$this->first]['path']=$path;
-			return;
+			return null;
 		}else{
 			$this->first=$this->nextNum($this->first);//首位前移
 			$this->history[$this->first]['path']=$path;			
 		}
 		if ($this->first==$this->last) {//起始位置与终止位置相遇
 			$this->last=$this->nextNum($this->last);//末尾位置前移。
-		}		
+		}
+        return null;
 	}
 
 	function goback(){//返回从first后退N步的地址。

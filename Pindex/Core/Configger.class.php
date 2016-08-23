@@ -81,7 +81,6 @@ class Configger {
         // it will be translated to 'method Closure::__set_state()'
         return Storage::write(self::$configs_path,'<?php return '.var_export(self::$_cache,true).';');
     }
-
     /**
      * parse config file into php array
      * @param string $path 配置文件的路径
@@ -93,18 +92,28 @@ class Configger {
         isset($type) or $type = pathinfo($path, PATHINFO_EXTENSION);
         switch ($type) {
             case self::TYPE_PHP:
-                return include $path;
+                $result = include $path;
+                if(!is_array($result)){
+                    $result = [];
+                }
+                break;
             case self::TYPE_INI:
-                return parse_ini_file($path);
+                if(($result = parse_ini_file($path)) === false) $result = [];
+                break;
             case self::TYPE_YAML:
-                return yaml_parse_file($path);
+                if(($result = yaml_parse_file($path)) === false) $result = [];
+                break;
             case self::TYPE_XML:
-                return (array)simplexml_load_file($path);
+                $result = (array)simplexml_load_file($path);
+                break;
             case self::TYPE_JSON:
-                return json_decode(file_get_contents($path), true);
+//                var_dump(json_decode(file_get_contents($path),true));exit();
+                $result = json_decode(file_get_contents($path), true);
+                break;
             default:
-                return $parser?$parser($path):PindexException::throwing('无法解析配置文件');
+                $result = $parser?$parser($path):PindexException::throwing('无法解析配置文件');
         }
+        return $result;
     }
 
 //------------------------------------ class config -------------------------------------------------------------------------------------
