@@ -31,7 +31,7 @@ return [
             'CACHE_UPDATE_CHECK'=> true,//是否检查模板文件是否发生了修改，如果发生修改将更新缓存文件（实现：检测模板文件的时间是否大于缓存文件的修改时间）
 
             'CACHE_PATH'       => PINDEX_PATH_RUNTIME.'/View/',
-            'TEMPLATE_SUFFIX'  =>  '.php',     // 默认模板文件后缀
+            'TEMPLATE_SUFFIX'  =>  '.html',     // 默认模板文件后缀
             'CACHFILE_SUFFIX'  =>  '.php',      // 默认模板缓存后缀
             'TAGLIB_BEGIN'     =>  '<',  // 标签库标签开始标记
             'TAGLIB_END'       =>  '>',  // 标签库标签结束标记

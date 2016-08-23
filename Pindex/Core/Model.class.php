@@ -513,7 +513,7 @@ class Model {
                 }
             }
             //set the input parameters,order by 'fields' and '
-            $inputs = isset($this->_inputs['fields'])?$this->_inputs['fields']:null;
+            $inputs = isset($this->_inputs['fields'])?$this->_inputs['fields']:[];
             if(isset($this->_inputs['where'])) $inputs = array_merge($inputs,$this->_inputs['where']);
 
 //            \Pindex\dumpout($sql,$inputs,$this->query($sql,$inputs),$this->error);

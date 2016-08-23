@@ -6,10 +6,14 @@
  * Date: 8/22/16
  * Time: 11:31 AM
  */
-
 namespace Pindex\Util\Encrypt;
+defined('PINDEX_APP_NAME') or die('No permission!');
 
-
+/**
+ * Class Base64
+ * Base64加密解密类
+ * @package Pindex\Util\Encrypt
+ */
 class Base64 {
 
     /**
@@ -19,9 +23,9 @@ class Base64 {
      * @param integer $expire 有效期（秒）
      * @return string
      */
-    public static function encrypt($data,$key,$expire=0) {
+    public static function encrypt($data,$key=null,$expire=ONE_WEEK) {
         $expire = sprintf('%010d', $expire ? $expire + time():0);
-        $key  = md5($key);
+        $key  = $key?md5($key):md5(PINDEX_APP_NAME);
         $data = base64_encode($expire.$data);
         $x    = 0;
         $len  = strlen($data);

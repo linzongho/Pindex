@@ -7,7 +7,7 @@
  */
 
 namespace Application\Admin\Model;
-use PLite\Library\Model;
+use Pindex\Core\Model;
 
 class WebsiteModel extends Model {
 

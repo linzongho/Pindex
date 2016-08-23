@@ -54,7 +54,7 @@ class Configger {
      * @param array $config
      * @return void
      */
-    public static function init(array $config=null){
+    public static function __init(array $config=null){
         $config and self::$_config = array_merge(self::$_config,$config);
         if(self::$configs_path and is_readable(self::$configs_path)){
             if(Storage::mtime(PINDEX_PATH_CONFIG) > Storage::mtime(self::$configs_path)){
@@ -120,12 +120,10 @@ class Configger {
     /**
      * get class config
      * @param string $clsnm class name
-     * @param bool $refresh is rerfresh the config
      * @return array
      * @throws PindexException
      */
-    public static function load($clsnm,$refresh=false){
-        if($refresh or null === self::$_cache) self::init();
+    public static function load($clsnm){
         if(!isset(self::$_cache[$clsnm])){
             $outer = self::loadOuter($clsnm);
             $inner = self::loadInner($clsnm);

@@ -9,8 +9,9 @@
 namespace Application\Admin\Controller;
 use Application\Admin\Model\MemberModel;
 use Application\Admin\Model\WebsiteModel;
-use PLite\Library\Controller;
-use PLite\Util\SEK;
+use Pindex\Core\Controller;
+use Pindex\Util\SEK;
+use Shirley\Loginout;
 
 abstract class Admin extends Controller {
     /**
@@ -22,18 +23,17 @@ abstract class Admin extends Controller {
      */
     public function __construct(){
         self::$memberModel or self::$memberModel = new MemberModel();
-        $status = self::$memberModel->isLogin();
+        $status = Loginout::check(SITUATION_ADMIN);
         if(!$status){
             $this->redirect('/Admin/Publics/login');
         }
-        define('REQUEST_PATH','/'.REQUEST_MODULE.'/'.REQUEST_CONTROLLER.'/'.REQUEST_ACTION);
+        define('REQUEST_PATH','/'.PINDEX_REQUEST_MODULE.'/'.PINDEX_REQUEST_CONTROLLER.'/'.PINDEX_REQUEST_ACTION);
     }
 
     /**
      * @param string|null $template
-     * @param array|null $pageinfo
      */
-    protected function show($template=null,array $pageinfo=null){
+    protected function show($template=null){
         $this->assign('userinfo',self::$memberModel->getLoginInfo());
         $model = new WebsiteModel();
         //is different by website

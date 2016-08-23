@@ -42,7 +42,7 @@
                     <h3>回溯：</h3>
                 </div>
                 <div class="text">
-                    <p><?php \Pindex\dump($trace); ?></p>
+                    <p><?php \Pindex\println($trace); ?></p>
                 </div>
             </div>
         <?php }?>

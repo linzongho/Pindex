@@ -7,16 +7,27 @@
  * Time: 5:49 PM
  */
 namespace Application\Admin\Model;
-use PLite\Library\Model;
-use PLite\Library\Cookie;
-use PLite\Library\Logger;
-use PLite\Library\Session;
-use PLite\Util\Encrypt\Base64;
-use PLite\Util\Helper\ClientAgent;
+use Pindex\Core\Logger;
+use Pindex\Core\Model;
+use Pindex\Library\Cookie;
+use Pindex\Library\Session;
+use Pindex\Util\Encrypt\Base64;
+use Pindex\Util\Helper\ClientAgent;
+use Shirley\LoginoutInterface;
 
-class MemberModel extends Model {
+class MemberModel extends Model implements LoginoutInterface{
 
     protected $tablename = 'lx_member';
+
+    /**
+     * 获取登录错误信息
+     * @return string|null
+     */
+    public function getLoginError()
+    {
+        // TODO: Implement getLoginError() method.
+    }
+
     protected $fields = [
         'username'  => null,
         'sex'       => null,
@@ -45,36 +56,18 @@ class MemberModel extends Model {
     private static $_userinfo = [];
 
     /**
-     * check the current user login status
-     * @return bool
-     */
-    public function isLogin(){
-        $status = Session::get(self::USER_INFO_FLAG);//return null if not set
-        if(!$status){
-            $cookie = Cookie::get(self::USER_INFO_FLAG);
-            if($cookie){
-                $usrinfo = unserialize(Base64::decrypt($cookie, self::USER_INFO_FLAG));
-                Session::set(self::USER_INFO_FLAG, $usrinfo);
-                return true;
-            }
-        }
-        return $status?true:false;
-    }
-
-
-    /**
      * @param string $username
      * @param null $password
-     * @param bool $remember
+     * @param int $expire
      * @return bool
      */
-    public function login($username,$password,$remember=false){
+    public function login($username,$password,$expire=0){
         $usrinfo = $this->checkLogin($username,$password);
         if($usrinfo){
-            if($remember){
+            if($expire){
                 $sinfo = serialize($usrinfo);
                 $cookie = Base64::encrypt($sinfo, self::USER_INFO_FLAG);
-                Cookie::set(self::USER_INFO_FLAG, $cookie,7*24*3600);//一周的时间
+                Cookie::set(self::USER_INFO_FLAG, $cookie,$expire);//一周的时间
             }
             Session::set(self::USER_INFO_FLAG, self::$_userinfo = $usrinfo);
             return true;
@@ -111,8 +104,6 @@ class MemberModel extends Model {
         Cookie::clear(self::USER_INFO_FLAG);
     }
 
-
-
     /**
      * 检查登陆
      * @param string $account 账户名称，可以是用户名、邮箱和手机号
@@ -133,7 +124,7 @@ class MemberModel extends Model {
         $userinfo = $this->fields('profile,email,id,nickname,last_login_ip,last_login_time,sex,username,passwd')->where($where)->find();
         if(false === $userinfo){
             Logger::write($this->error(),$userinfo);
-            if(!DEBUG_MODE_ON){
+            if(!PINDEX_DEBUG_MODE_ON){
                 $this->error = '服务端发生了错误！';
             }
         }elseif(!$userinfo){//空数组
@@ -143,7 +134,7 @@ class MemberModel extends Model {
                 //update
                 $this->fields([
                     'last_login_ip'     => ClientAgent::getClientIP(),
-                    'last_login_time'   => REQUEST_TIME,
+                    'last_login_time'   => PINDEX_REQUEST_TIME,
                 ])->where($where)->update();
 
                 unset($userinfo['passwd']);

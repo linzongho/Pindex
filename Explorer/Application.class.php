@@ -79,9 +79,66 @@ namespace {
     @session_start();
     session_write_close();//避免session锁定问题;之后要修改$_SESSION 需要先调用session_start()
 
+
+
+//语言包加载：优先级：cookie获取>自动识别
+//首次没有cookie则自动识别——存入cookie,过期时间无限
+    if (isset($_COOKIE['kod_user_language'])) {
+        $lang = $_COOKIE['kod_user_language'];
+    }else{//没有cookie
+        preg_match('/^([a-z\-]+)/i', $_SERVER['HTTP_ACCEPT_LANGUAGE'], $matches);
+        $lang = $matches[1];
+        switch (substr($lang,0,2)) {
+            case 'zh':
+                if ($lang != 'zn-TW'){
+                    $lang = 'zh-CN';
+                }
+                break;
+            case 'en':$lang = 'en';break;
+            default:$lang = 'en';break;
+        }
+        $lang = str_replace('-', '_',$lang);
+        setcookie('kod_user_language',$lang, time()+3600*24*365);
+    }
+    if ($lang == '') $lang = 'en';
+    $lang = str_replace(array('/','\\','..','.'),'',$lang);
+    define('LANGUAGE_TYPE', $lang);
+    $GLOBALS['L'] = include(LANGUAGE_PATH.$lang.'/main.php');
+
+
+    //加载用户自定义配置
+    $setting_user = BASIC_PATH.'config/setting_user.php';
+    if (file_exists($setting_user)) {
+        include($setting_user);
+    }
+
+
     $GLOBALS['config'] = Configger::parse(PINDEX_PATH_CONFIG.'/explorer/general.php');
 
-    $GLOBALS['L'] = include_once LANGUAGE_PATH.'en/main.php';
+
+    //init setting
+    $setting_file = USER_SYSTEM.'system_setting.php';
+    if (!file_exists($setting_file)){//不存在则建立
+        $setting = $GLOBALS['config']['setting_system_default'];
+        $setting['menu'] = $GLOBALS['config']['setting_menu_default'];
+        fileCache::save($setting_file,$setting);
+    }else{
+        $setting = fileCache::load($setting_file);
+    }
+    if (!is_array($setting)) {
+        $setting = $GLOBALS['config']['setting_system_default'];
+    }
+    if (!is_array($setting['menu'])) {
+        $setting['menu'] = $GLOBALS['config']['setting_menu_default'];
+    }
+    $GLOBALS['L']['kod_name'] = $setting['system_name'];
+    $GLOBALS['L']['kod_name_desc'] = $setting['system_desc'];
+    if (isset($setting['powerby'])) {
+        $GLOBALS['L']['kod_power_by'] = $setting['powerby'];
+    }
+
+    $GLOBALS['config']['setting_system'] = $setting;//全局
+
 }
 
 
@@ -91,11 +148,15 @@ namespace Explorer{
      * 这里类判断外界参数调用内部方法
      */
     class Application {
-        public $default_controller = null;	//默认的类名
-        public $default_action = null;
+        public $default_controller = 'desktop';	//默认的类名
+        public $default_action = 'index';
         public $default_do = null;			//默认的方法名
 //	public $sub_dir ='';				//控制器子目录
         public $model = '';				//控制器对应模型  对象。
+
+        public function __construct($ctler='desktop',$actio='index'){
+
+        }
 
         /**
          * 设置默认的类名

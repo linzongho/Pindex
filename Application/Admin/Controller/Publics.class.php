@@ -8,8 +8,8 @@
 
 namespace Application\Admin\Controller;
 use Application\Admin\Model\MemberModel;
-use PLite\Library\Controller;
-use PLite\Library\Logger;
+use Pindex\Core\Controller;
+use Pindex\Core\Logger;
 
 class Publics extends Controller{
 
@@ -18,7 +18,7 @@ class Publics extends Controller{
     }
     public function login($username='',$passwd='',$remember=false){
         $error = '';
-        if(IS_METHOD_POST){
+        if(PINDEX_IS_POST){
             if(!$username or !$passwd){
                 $error = '用户名或者密码不能为空';
             }else{

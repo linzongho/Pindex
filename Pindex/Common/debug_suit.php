@@ -132,6 +132,21 @@ function _buildMessage($params, $traces)
 
 
 /**
+ * 获取变量的名字
+ * eg hello="123" 获取ss字符串
+ * @param $aVar
+ * @return int|string
+ */
+function _get_var_name(&$aVar){
+    foreach($GLOBALS as $key => $var) {
+        if ($aVar == $GLOBALS[$key] && $key != "argc") {
+            return $key;
+        }
+    }
+    return 'Unknown';
+}
+
+/**
  * 格式化输出变量，或者对象
  *
  * @param mixed $var
@@ -177,7 +192,7 @@ function println($var, $exit = false){
 
     echo $style . '<pre id="debug">'.
         "<h3 style='color: midnightblue'><b>File:</b> {$traces[0]['file']} << <b>Line:</b> {$traces[0]['line']} >> </h3 > <br />".
-        '<b id="debug_keywords">' . get_var_name($var) . '</b> = ' . $out . '</pre>';
+        '<b id="debug_keywords">' . _get_var_name($var) . '</b> = ' . $out . '</pre>';
     if ($exit) exit; //为真则退出
 }
 

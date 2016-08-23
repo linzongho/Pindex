@@ -134,7 +134,7 @@ class Think implements ViewInterface {
      * @var array
      */
     protected $_replacement = [
-        'PINDEX_PATH_RUNTIME'    =>  PINDEX_PUBLIC_URL,     // Public目录访问地址
+        '__PUBLIC__'    =>  PINDEX_PUBLIC_URL,     // Public目录访问地址
     ];
 
     /**
@@ -167,7 +167,7 @@ class Think implements ViewInterface {
         $template = View::parseTemplatePath($context);
         $this->_context = $context;
         //模板常量
-        defined('__ROOT__') or define('__ROOT__',Router::getBasicUrl());
+        defined('__ROOT__') or define('__ROOT__',PINDEX_PUBLIC_URL);
         defined('__MODULE__') or define('__MODULE__',PINDEX_PUBLIC_URL.'/'.$context['m']);
         defined('__CONTROLLER__') or define('__CONTROLLER__',__MODULE__.'/'.$context['c']);
         defined('__ACTION__') or define('__ACTION__',__CONTROLLER__.'/'.$context['a']);
@@ -179,11 +179,15 @@ class Think implements ViewInterface {
 
         $template or PindexException::throwing('No template!');
 
-        if(false === strpos($template,$this->config['TEMPLATE_SUFFIX'])) {
+        //如果原先的后缀名是.php 则这里的操作可以避免修改，如果是标准的框架内的方式如$this->display('index')
+        //或者$this->display(/* 方法名称自动获取 */)，则一定会进入到else中并连接上预定义的后缀名
+        if(strpos($template,'.')){
+            //存在.表示已经设置了后缀名
+        }else{
+            //连接上默认的后缀名
             $template .= $this->config['TEMPLATE_SUFFIX'];
         }
-//        \Pindex\dump(is_file($template));
-//        \Pindex\dumpout($template);
+
         $this->fetch($this->template = $template,$this->_tVars);
     }
 
