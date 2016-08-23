@@ -217,7 +217,11 @@ class fileCache
     }
     /**
     * 保存数据；
-    */
+     * @static
+     * @param $file
+     * @param $data
+     * @return void
+     */
     public static function save($file,$data){//10000次需要6s 
         if (!$file) return;
         if (file_exists($file) && !is_writable($file)) {

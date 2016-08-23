@@ -113,7 +113,7 @@ $config['setting_menu_default'] = array(
     array('name' => 'desktop', 'type' => 'system', 'url' => ENTRY_NAME.'?desktop', 'target' => '_self', 'use' => '1'),
     array('name' => 'explorer', 'type' => 'system', 'url' => ENTRY_NAME.'?explorer', 'target' => '_self', 'use' => '1'),
     array('name' => 'editor', 'type' => 'system', 'url' => ENTRY_NAME.'?editor', 'target' => '_self', 'use' => '1'),
-    array('name' => 'adminer', 'type' => '', 'url' => './lib/plugins/adminer/', 'target' => '_blank', 'use' => '1')
+    array('name' => 'adminer', 'type' => '', 'url' => 'adminer.php', 'target' => '_blank', 'use' => '1')
 );
 
 //权限配置；精确到需要做权限控制的控制器和方法
