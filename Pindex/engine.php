@@ -83,7 +83,7 @@ namespace {
     //environment
     version_compare(PHP_VERSION,'5.6','<') and die('Require php >= 5.6 !');
 
-    if(PINDEX_DEBUG_MODE_ON) include __DIR__.'/Common/debug_suit.php';
+    if(PINDEX_DEBUG_MODE_ON) include __DIR__.'/Common/debug_suit.inc.php';
 
     final class Pindex {
 
@@ -112,7 +112,8 @@ namespace {
             'CACHE_URL_ON'      => false,
             'CACHE_PATH_ON'     => false,
 
-            'ROUTE_ON'          => false,
+            'ROUTER_PARSER'         => null,
+            'ROUTER_PARSER_CONFIG'  => null,
         ];
         /**
          * @var bool 标记是否需要初始化
@@ -187,9 +188,8 @@ namespace {
                 Cache::begin($identify);
 
                 //parse uri
-                $result = self::$config['ROUTE_ON']?Router::parseRoute():null;
-                \Pindex\println($result);
-                $result or $result = Router::parseURL();
+                $result = Router::parse(self::$config['ROUTER_PARSER']);
+//                \Pindex\println($result);exit();
                 //URL中解析结果合并到$_GET中，$_GET的其他参数不能和之前的一样，否则会被解析结果覆盖,注意到$_GET和$_REQUEST并不同步，当动态添加元素到$_GET中后，$_REQUEST中不会自动添加
                 empty($result['p']) or $_GET = array_merge($_GET,$result['p']);
 
@@ -506,6 +506,10 @@ namespace Pindex {
         }
     }
 
+    /**
+     * Class PindexException
+     * @package Pindex
+     */
     class PindexException extends \Exception {
         /**
          * Construct the exception. Note: The message is NOT binary safe.

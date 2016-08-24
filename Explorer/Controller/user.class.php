@@ -182,9 +182,7 @@ class user extends Controller {
             $password = rawurldecode($this->in['password']);
             
             session_start();//re start 有新的修改后调用
-            if(need_check_code() && isset($_SESSION['code_error_time'])  && 
-               intval($_SESSION['code_error_time']) >=3 && 
-               $_SESSION['check_code'] !== strtolower($this->in['check_code'])){
+            if(need_check_code() && isset($_SESSION['code_error_time'])  &&  intval($_SESSION['code_error_time']) >=3 &&  $_SESSION['check_code'] !== strtolower($this->in['check_code'])){
                 // pr($_SESSION['check_code'].'--'.strtolower($this->in['check_code']));exit;
                 $this->login($this->L['code_error']);
             }
@@ -208,6 +206,8 @@ class user extends Controller {
             }else{
                 $msg = $this->L['password_error'];
             }
+            //验证码输入次数上限
+            isset($_SESSION['code_error_time']) or $_SESSION['code_error_time'] = 0;
             $_SESSION['code_error_time'] = intval($_SESSION['code_error_time']) + 1;
         }
         $this->login($msg);

@@ -682,7 +682,6 @@ class Model {
 
         $sql = '';
         $bind = [];
-
         //元素连接
         foreach($segments as $field=> $segment){
             if(is_numeric($field)){

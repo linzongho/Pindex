@@ -164,6 +164,9 @@ namespace {
      */
     function path_writable($path){
         if (is_dir($path)) {
+            if(!is_writable($path)){
+                return false;
+            }
             $file = $path.'/writeable_test_'.time().'.txt';
             @touch($file);
             if(file_exists($file)){

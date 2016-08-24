@@ -2,7 +2,7 @@
 include_once TEMPLATE.'common/head.php';
 ?>
 <body style="overflow: hidden;" oncontextmenu="return core.contextmenu();">
-	<?php include(TEMPLATE.'common/navbar.html');?>
+	<?php /*include(TEMPLATE.'common/navbar.php');*/ ?>
 	<div class='bodymain html5_drag_upload_box desktop' style="background-image: url('<?php echo $wall;?>');">
 		<img class="wallbackground" src="<?php echo $wall;?>"/>
 		<div class="fileContiner fileList_icon hidden">

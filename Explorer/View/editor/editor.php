@@ -19,7 +19,7 @@
 <?php } ?>
 
 <body style="overflow:hidden;" oncontextmenu="return core.contextmenu();">
-	<?php include(TEMPLATE.'common/navbar.html');?>
+	<?php include(TEMPLATE.'common/navbar.php');?>
 	<div class="frame-main">
 		<div class='frame-left'>
 			<div class="tools-left">

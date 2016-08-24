@@ -10,7 +10,7 @@ namespace Application\Admin\Model;
 use Pindex\Core\Logger;
 use Pindex\Core\Model;
 use Pindex\Util\Helper\ClientAgent;
-use Shirley\LoginoutInterface;
+use Shirley\Interfaces\LoginoutInterface;
 
 class MemberModel extends Model implements LoginoutInterface{
 
@@ -20,9 +20,7 @@ class MemberModel extends Model implements LoginoutInterface{
      * 获取登录错误信息
      * @return string|null
      */
-    public function getLoginError()
-    {
-        // TODO: Implement getLoginError() method.
+    public function getLoginError(){
     }
 
     protected $fields = [
@@ -58,6 +56,7 @@ class MemberModel extends Model implements LoginoutInterface{
                 $where['username'] = $username;
         }
         $userinfo = $this->fields('profile,email,id,nickname,last_login_ip,last_login_time,sex,username,passwd')->where($where)->find();
+
         if(false === $userinfo){
             $error = $this->error();
             Logger::write($error,$userinfo);

@@ -8,16 +8,15 @@
  */
 
 namespace Pindex\Core;
+use Pindex\Exceptions\Database\ConnectFailedException;
 use PDO;
-use PDOStatement;
 use PDOException;
-use Pindex\PindexException as Exception;
+use PDOStatement;
 use Pindex\Lite;
+use Pindex\PindexException as Exception;
 
 /**
  * Class DaoAbstract Dao
- *
- *
  * 实现的差异：
  *  ① MySQL的group by在字段未加入聚合函数时会取多条数据的第一条，而SQL Server会提示错误并终止执行
  *  ② mysql中是 ``, sqlserver中是 [], oracle中是 ""
@@ -27,31 +26,19 @@ use Pindex\Lite;
 abstract class DaoDriver extends PDO {
 
     /**
-     * PDO驱动器名称
-     * @var string
-     */
-    protected $driverName = null;
-
-    /**
-     * 禁止访问的PDO函数的名称
-     * @var array
-     */
-    protected $forbidMethods = [
-        'forbid','getColumnMeta'
-    ];
-
-    /**
      * 创建驱动类对象
      * DatabaseDriver constructor.
      * @param array $config
-     * @throws Exception 未设置
+     * DaoDriver constructor.
+     * @param array $config
+     * @throws ConnectFailedException
      */
     public function __construct(array $config){
+        $dsn = is_string($config['dsn'])?$config['dsn']:$this->buildDSN($config);
         try {
-            $dsn = is_string($config['dsn'])?$config['dsn']:$this->buildDSN($config);
             parent::__construct($dsn,$config['username'],$config['password'],$config['options']);
         } catch(PDOException $e){
-            Exception::throwing('Connect failed:'.$e->getMessage());
+            throw new ConnectFailedException($dsn,$config,$e->getMessage());
         }
     }
 
@@ -101,22 +88,52 @@ abstract class DaoDriver extends PDO {
      */
     abstract public function compile(array $components,$actiontype);
 
+}
+
+class DaoUtil {
     /**
-     * 调用不存在的方法时
-     * 需要注意的是，访问了禁止访问的方法时将返回false
-     * @param string $name 方法名称
-     * @param array $args 方法参数
-     * @return mixed
+     * 获取PDO对象上发生的错误
+     * [
+     *      0   => SQLSTATE error code (a five characters alphanumeric identifier defined in the ANSI SQL standard).
+     *      1   => Driver-specific error code.
+     *      2   => Driver-specific error message.
+     * ]
+     * If the SQLSTATE error code is not set or there is no driver-specific error,
+     * the elements following element 0 will be set to NULL .
+     * @param \PDO $pdo PDO对象或者继承类的实例
+     * @return null|string null表示未发生错误,string表示序列化的错误信息
      */
-    public function __call($name,$args){
-        if(in_array($name,$this->forbidMethods,true))  return false;
-        return call_user_func_array([$this,$name],$args);
+    public static function fetchPdoError(PDO $pdo){
+        $pdoError = $pdo->errorInfo();
+        return null !== $pdoError[0]? "PDO Error:{$pdoError[0]} >>> [{$pdoError[1]}]:[{$pdoError[2]}]":null;// PDO错误未被设置或者错误未发生,0位的值为null
+    }
+
+    /**
+     * 获取PDOStatemnent对象上查询时发生的错误
+     * 错误代号参照ANSI CODE ps: https://docs.oracle.com/cd/F49540_01/DOC/server.815/a58231/appd.htm
+     * @param \PDOStatement $statement 发生了错误的PDOStatement对象
+     * @return string|null 错误未发生时返回null
+     */
+    public static function fetchPdoStatementError(PDOStatement $statement){
+        $stmtError = $statement->errorInfo();
+        return 0 !== intval($stmtError[0])?"Error Code:[{$stmtError[0]}]::[{$stmtError[1]}]:[{$stmtError[2]}]":null;//代号为0时表示错误未发生
     }
 }
 
 /**
  * Class Dao
  * Database access object
+ *
+ ************************** 驱动扩展 *****************************************************
+ * @method int lastInsertId(string $name=null) 获取上次添加的数据的自增ID
+ * @method string escape(string $fieldname) 转义保留字字段名称
+ *
+ ************************** 事务功能 *****************************************************
+ * @method bool beginTransaction() 开启事务
+ * @method bool commit() 提交事务
+ * @method bool rollback() 回滚事务
+ * @method bool inTransaction()  确认是否在事务中
+ *
  * @package Pindex\Core
  */
 class Dao extends Lite {
@@ -131,7 +148,7 @@ class Dao extends Lite {
         ],
         'DRIVER_CONFIG_LIST' => [
             [
-                'dbname'    => 'xor',//选择的数据库
+                'dbname'    => 'index',//选择的数据库
                 'username'  => 'lin',
                 'password'  => '123456',
                 'host'      => 'localhost',
@@ -172,6 +189,10 @@ class Dao extends Lite {
                 ],
             ],
         ],
+        //禁止访问的PDO函数的名称
+        'forbidden'  =>[
+            'forbid','getColumnMeta'
+        ],
     ];
 
     /**
@@ -192,37 +213,16 @@ class Dao extends Lite {
     protected $error = null;
 
     /**
-     * 获取PDO对象上发生的错误
-     * [
-     *      0   => SQLSTATE error code (a five characters alphanumeric identifier defined in the ANSI SQL standard).
-     *      1   => Driver-specific error code.
-     *      2   => Driver-specific error message.
-     * ]
-     * If the SQLSTATE error code is not set or there is no driver-specific error,
-     * the elements following element 0 will be set to NULL .
-     * @param \PDO $pdo PDO对象或者继承类的实例
-     * @return null|string null表示未发生错误,string表示序列化的错误信息
+     * @var array|null
      */
-    public static function fetchPdoError(PDO $pdo){
-        $pdoError = $pdo->errorInfo();
-        return null !== $pdoError[0]? "PDO Error:{$pdoError[0]} >>> [{$pdoError[1]}]:[{$pdoError[2]}]":null;// PDO错误未被设置或者错误未发生,0位的值为null
-    }
+    private static $config = null;
 
-    /**
-     * 获取PDOStatemnent对象上查询时发生的错误
-     * 错误代号参照ANSI CODE ps: https://docs.oracle.com/cd/F49540_01/DOC/server.815/a58231/appd.htm
-     * @param \PDOStatement $statement 发生了错误的PDOStatement对象
-     * @return string|null 错误未发生时返回null
-     */
-    public static function fetchPdoStatementError(PDOStatement $statement){
-        $stmtError = $statement->errorInfo();
-        return 0 !== intval($stmtError[0])?"Error Code:[{$stmtError[0]}]::[{$stmtError[1]}]:[{$stmtError[2]}]":null;//代号为0时表示错误未发生
-    }
     /**
      * Dao constructor.
      * @param string|int $index
      */
     public function __construct($index){
+        isset(self::$config) or self::$config = self::getConfig();
         $this->pdo = self::driver($index);
     }
 
@@ -246,16 +246,16 @@ class Dao extends Lite {
                 if($statement){//query成功时返回PDOStatement对象
                     return $statement->fetchAll();//成功返回
                 }else{
-                    $this->error = self::fetchPdoError($this->pdo);
+                    $this->error = DaoUtil::fetchPdoError($this->pdo);
                 }
             }else{
                 //简介调用PDOStatement的查询功能
                 $statement = $this->pdo->prepare($sql);//可能returnfalse或者抛出错误
                 if(!$statement){
-                    $this->error = self::fetchPdoError($this->pdo);
+                    $this->error = DaoUtil::fetchPdoError($this->pdo);
                 }else{
                     if(!$statement->execute($inputs)){/*execute不会抛出异常*/
-                        $this->error = self::fetchPdoStatementError($statement);
+                        $this->error = DaoUtil::fetchPdoStatementError($statement);
                     }else{
                         return $statement->fetchAll();
                     }
@@ -280,16 +280,16 @@ class Dao extends Lite {
                 //调用PDO的查询功能
                 $rst = $this->pdo->exec($sql);
                 if(false !== $rst) return $rst;
-                $this->error = self::fetchPdoError($this->pdo);
+                $this->error = DaoUtil::fetchPdoError($this->pdo);
             }else { //调用PDOStatement的查询功能
                 $statement = $this->pdo->prepare($sql);
                 if (false === $statement) {
-                    $this->error = self::fetchPdoError($this->pdo);
+                    $this->error = DaoUtil::fetchPdoError($this->pdo);
                 } else {
                     if (false !== $statement->execute($inputs)) {
                         return $statement->rowCount();
                     }else{
-                        $this->error = self::fetchPdoStatementError($statement);
+                        $this->error = DaoUtil::fetchPdoStatementError($statement);
                     }
                 }
             }
@@ -299,7 +299,7 @@ class Dao extends Lite {
         return false;
     }
 
-    /********************************* 高级查询功能(支持链式调用相应的错误的处理必须是异常处理,与无法通过getError获取这些错误的详细信息,但可以通过$e->getMessage()获取详细信息) ***************************************************************************************/
+/********************************* 高级查询功能(支持链式调用相应的错误的处理必须是异常处理,与无法通过getError获取这些错误的详细信息,但可以通过$e->getMessage()获取详细信息) ***************************************************************************************/
     /**
      * 准备一段SQL
      * @param string $sql 查询的SQL，当参数二指定的ID存在，只有在参数一布尔值不为false时，会进行真正地prepare
@@ -310,7 +310,7 @@ class Dao extends Lite {
         $this->error = null;
         try{
             $this->curStatement = $this->pdo->prepare($sql,$option);//prepare失败抛出异常后赋值过程结束,$this->curStatement可能依旧指向之前的SQLStatement对象（可能不为null）
-            $this->curStatement or $error = self::fetchPdoError($this->pdo);
+            $this->curStatement or $error = DaoUtil::fetchPdoError($this->pdo);
         }catch(PDOException $e){  $this->error = $e->getMessage(); }
         return $this;
     }
@@ -329,7 +329,7 @@ class Dao extends Lite {
         if($this->curStatement->execute($input_parameters)){
             return $this->curStatement->rowCount();
         }else{
-            $this->error = self::fetchPdoStatementError($this->curStatement);
+            $this->error = DaoUtil::fetchPdoStatementError($this->curStatement);
             return false;
         }
     }
@@ -388,63 +388,7 @@ class Dao extends Lite {
         return $this->curStatement->rowCount();
     }
 
-    /****************************** 事务功能 ***************************************************************************************
 
-    /**
-     * 开启事务
-     * @return bool
-     */
-    public function beginTransaction(){
-        $result = $this->pdo->beginTransaction();
-//        dumpout($result,$this->driver->inTransaction());
-        return $result;
-    }
-
-    /**
-     * 提交事务
-     * @return bool
-     */
-    public function commit(){
-        $this->pdo->inTransaction() or Exception::throwing('Not in transaction!');
-        return $this->pdo->commit();
-    }
-    /**
-     * 回滚事务
-     * @return bool
-     */
-    public function rollBack(){
-        return $this->pdo->rollBack();
-    }
-    /**
-     * 确认是否在事务中
-     * @return bool
-     */
-    public function inTransaction(){
-        return $this->pdo->inTransaction();
-    }
-
-    /************************************** 驱动实现扩展方法 ******************************************************************************************/
-
-    /**
-     * 转义保留字字段名称
-     * @param string $fieldname 字段名称
-     * @return string
-     */
-    public function escape($fieldname){
-        return $this->pdo->escape($fieldname);
-    }
-
-    /**
-     * 返回最后插入行的ID或序列值
-     * NoteL:
-     *  官方：在不同的 PDO 驱动之间，此方法可能不会返回一个有意义或一致的结果，因为底层数据库可能不支持自增字段或序列的概念
-     *  推测只要是自增字段就可以把其值返回
-     * @param string $name 应该返回ID的那个序列对象的名称
-     * @return string
-     */
-    public function lastInsertId($name=null){
-        return $this->pdo->lastInsertId($name);
-    }
     /************************************** Error ******************************************************************************************/
     /**
      * 返回PDO驱动或者上一个PDO语句对象上发生的错误的信息（具体驱动的错误号和错误信息）
@@ -455,8 +399,20 @@ class Dao extends Lite {
         return $this->error;
     }
 
-    public function getPdo(){
+    public function getDriver(){
         return $this->pdo;
     }
+
+    /**
+     * 调用不存在的方法时
+     * 需要注意的是，访问了禁止访问的方法时将返回false
+     * @param string $name 方法名称
+     * @param array $args 方法参数
+     * @return false|mixed
+     */
+    public function __call($name,$args){
+        return in_array($name,self::$config['forbidden'],true)? false :call_user_func_array([$this->pdo,$name],$args);
+    }
+
 
 }

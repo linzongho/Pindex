@@ -14,34 +14,12 @@
 
 namespace Shirley{
 
+    use Pindex\Debugger;
     use Pindex\Library\Cookie;
     use Pindex\Library\Session;
-    use Pindex\PindexException;
     use Pindex\Util\Encrypt\Base64;
-
-
-    interface LoginoutInterface {
-        /**
-         * 执行登录操作
-         * @param string $username 用户名
-         * @param string $password 密码
-         * @return false|array 登录失败时返回false，登录成功时返回该账户信息
-         */
-        public function login($username,$password);
-
-        /**
-         * 执行登出操作
-         * @return bool 是否成功登出
-         */
-        public function logout();
-
-        /**
-         * 获取登录错误信息
-         * @return string|null
-         */
-        public function getLoginError();
-
-    }
+    use Pindex\Util\Trace;
+    use Shirley\Interfaces\LoginoutInterface;
 
     /**
      * Class Loginout
@@ -64,112 +42,123 @@ namespace Shirley{
         private static $username = null;
 
         /**
-         * 检查在该场景中用户是否处于登录状态
+         * 获取session和cookie名称，兼加密密钥
          * @static
-         * @param string $username 登录的账户名称
-         * @return bool
+         * @return string|false
          */
-        public static function check($username=null){
-            if(null === $username){
-                if(null === self::$username){
-                    return false;
+        private static function getKey(){
+            return PINDEX_APP_NAME.'Lukey';
+        }
+        /**
+         * 获取当前登录的账户的信息
+         * @param string|null $tname 为null时获取全部信息
+         * @return array|null 信息不存在时返回null
+         */
+        public static function getUserinfo($tname=null){
+            if(!self::$info){
+                if(self::$info = self::_getInfoFromSessionOrCookie()){
+                    Debugger::trace('load Login info from session or cookie!');
                 }else{
-                    $username = self::$username;
+                    return null;
                 }
             }
-            $status = Session::get($username);//return null if not set
-            if(!$status){
+            return $tname? (isset(self::$info[$tname])?self::$info[$tname]:null) : self::$info;
+        }
+
+        private static function _getInfoFromSessionOrCookie(){
+            $key = self::getKey();
+            $info = Session::get($key);//return null if not set
+            if(!$info){
                 //未登录时检查cookie中是否记录账户要求rememeber的未过期的信息
-                $cookie = Cookie::get($username);
+                $cookie = Cookie::get($key);
                 if($cookie){
-                    $usrinfo = unserialize(Base64::decrypt($cookie, $username));
-                    Session::set($username, $usrinfo);
-                    return true;
+                    $info = unserialize(Base64::decrypt($cookie, $key));
+                    Session::set($key, $info);
+                }else{
+                    return null;
                 }
             }
-            return $status?true:false;
+            return self::$info = $info;
         }
 
         /**
-         * 获取当前登录的账户的信息
-         * @param null $node
-         * @return mixed|null 信息不存在时返回null
+         * 检查在该场景中用户是否处于登录状态
+         * @static
+         * @return bool
          */
-        public static function getUserinfo($node=null){
+        public static function check(){
             if(!self::$info){
-                if(null === self::$username){
-                    return false;
-                }else{
-                    self::$info = Session::get(self::$username);
-                    if(null === self::$info){
-                        //用户未登录,按照情况执行抛出异常操作或者返回null
-                        return false;//'用户未登录，无法执行该操作！'
+                //如果设置了info，则一定是有效的登录
+                $key = self::getKey();
+                $status = Session::get($key);//return null if not set
+                if(!$status){
+                    //未登录时检查cookie中是否记录账户要求rememeber的未过期的信息
+                    $cookie = Cookie::get($key);
+                    if($cookie){
+                        Session::set($key, self::$info = unserialize(Base64::decrypt($cookie, $key)));
+                    }else{
+                        return false;
                     }
+                }else{
+                    self::$info = $status;
                 }
             }
-
-            if($node){
-                return isset(self::$info[$node])?self::$info[$node]:null;
-            }
-            return self::$info;
+            return true;
         }
+
         /**
          * 执行登录操作
          * @static
          * @param string $username 用户名
          * @param string $password 密码
-         * @param int $expire 记录时间，如果是0表示不记录
          * @param LoginoutInterface $model
          * @return true|string 登录成功时返回true，否则返回错误信息
          */
-        public static function login($username,$password,$expire=0,LoginoutInterface $model=null){
-            if(self::check($username)){
-                return '用户已经登录';
-            }else{
-                $model and self::$model = $model;
-                if($model instanceof LoginoutInterface) {
-                    $info = $model->login($username,$password);
-                    if($info){
-                        if($expire){
-                            $sinfo = serialize($info);
-                            $cookie = Base64::encrypt($sinfo, $username);
-                            Cookie::set($username, $cookie, $expire);//一周的时间
-                        }
-                        Session::set(self::$username = $username, self::$info = $info);
-                        return true;
-                    }else{
-                        return $model->getLoginError();
-                    }
+        public static function login($username,$password,LoginoutInterface $model=null){
+            $model and self::$model = $model;
+            if(self::$model instanceof LoginoutInterface) {
+                $info = self::$model->login($username,$password);
+                if(is_string($info)){
+                    return $info;
                 }else{
-                    return PindexException::throwing('不存在可用的模型！');
+                    $key = self::getKey();
+                    Session::set($key, $info);
+                    self::$username = $username;
+                    self::$info = $info;
+                    return true;
                 }
-            }
-        }
-
-        public static function remember($expire,$info=null){
-            if(null === $info){
-                $info = self::getUserinfo();
-
+            }else{
+                return '不存在可用的模型！';
             }
         }
 
         /**
+         * 记住用户的登录信息
+         * @static
+         * @param int $expire
+         * @param null $info
+         * @return void
+         */
+        public static function remember($expire=ONE_WEEK,$info=null){
+            $info or $info = self::getUserinfo();
+            $key = self::getKey();
+            Cookie::set($key, Base64::encrypt(serialize($info), $key), $expire);
+        }
+
+        /**
          * 注销登陆
-         * @param string $username 登录账户名
          * @param LoginoutInterface $model
          * @return bool
          */
-        public static function logout($username,LoginoutInterface $model=null){
+        public static function logout(LoginoutInterface $model=null){
             $model and self::$model = $model;
-            if($model instanceof LoginoutInterface) {
-                if($model->logout()){
-                    Session::delete($username);
-                    Cookie::clear($username);
-                    return true;
-                }
+            if(self::$model and !self::$model->logout()){
+                return false;
             }
-            return false;
+            $key = self::getKey();
+            Session::delete($key);
+            Cookie::clear($key);
+            return true;
         }
-
     }
 }

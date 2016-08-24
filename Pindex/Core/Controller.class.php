@@ -122,6 +122,7 @@ class Controller {
      */
     public function redirect($compo,array $params=[],$time=0,$message=''){
         $url = Router::url($compo,$params);
+//        \Pindex\println($url,true);
         Router::redirect($url,$time,$message);
     }
 

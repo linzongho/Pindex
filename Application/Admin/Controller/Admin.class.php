@@ -23,7 +23,8 @@ abstract class Admin extends Controller {
      */
     public function __construct(){
         self::$memberModel or self::$memberModel = new MemberModel();
-        $status = Loginout::check(SITUATION_ADMIN);
+        $status = Loginout::check();
+//        \Pindex\println($status);
         if(!$status){
             $this->redirect('/Admin/Publics/login');
         }
@@ -34,7 +35,7 @@ abstract class Admin extends Controller {
      * @param string|null $template
      */
     protected function show($template=null){
-        $this->assign('userinfo',self::$memberModel->getLoginInfo());
+        $this->assign('userinfo',Loginout::getUserinfo());
         $model = new WebsiteModel();
         //is different by website
         $webinfo = $model->lists(true);

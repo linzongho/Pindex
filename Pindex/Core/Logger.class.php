@@ -91,7 +91,7 @@ class Logger extends Lite {
             $path = PINDEX_PATH_RUNTIME."/Log/{$level}/{$datetime}.log";
         }else{
             $date = date('Y-m-d');
-            $rate = (self::getConfig())['RATE'];
+            $rate = self::getConfig('RATE');
             $rate or $rate = self::LOGRATE_DAY;
             switch($rate){
                 case self::LOGRATE_DAY:

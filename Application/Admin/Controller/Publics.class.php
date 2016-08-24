@@ -10,6 +10,7 @@ namespace Application\Admin\Controller;
 use Application\Admin\Model\MemberModel;
 use Pindex\Core\Controller;
 use Pindex\Core\Logger;
+use Shirley\Loginout;
 
 class Publics extends Controller{
 
@@ -22,16 +23,21 @@ class Publics extends Controller{
             if(!$username or !$passwd){
                 $error = '用户名或者密码不能为空';
             }else{
-                $model = new MemberModel();
-                $result = $model->login($username,$passwd,$remember);
+                $result = Loginout::login($username,$passwd,MemberModel::getInstance());
+                $remember and Loginout::remember(ONE_WEEK);
+//                \Pindex\println([
+//                    $result,
+//                    Loginout::check(),
+//                ],true);
                 if($result){
                     $this->redirect('/Admin/Index/index');
                 }else{
-                    Logger::write([$model->error(),$username,$passwd,'login failed']);
+                    Logger::write([$result,$username,$passwd,'login failed']);
                 }
-                $error = $model->error();
+                $error = $result;
             }
         }
+        Loginout::check() and $this->redirect('/Admin/Index/index');//已经登录的状态
         $this->assign('error',$error);
         $this->display();
     }
@@ -51,8 +57,7 @@ class Publics extends Controller{
      * 注销登录
      */
     public function logout(){
-        (new MemberModel())->logout();
-        $this->redirect('/Admin/Publics/login');
+        Loginout::logout(new MemberModel()) and $this->redirect('/Admin/Publics/login');
     }
 
 }
