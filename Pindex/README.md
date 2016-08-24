@@ -13,6 +13,8 @@
     在Dao.class.php文件还总内建了一个DaoUtil类，那么只有在使用Dao类的时候才能被加载到内存中
     
 
+    public static function parse(URLParseCreater $parser=null)
+    如果参数是类的名称字符串，也可以执行。。。
 
 
 

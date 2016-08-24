@@ -7,7 +7,12 @@
  * Time: 11:01 AM
  */
 namespace Pindex\Core;
+use Pindex\Core\Dispatcher\DispatchInstanceGeneraterInterface;
 use Pindex\Debugger;
+use Pindex\Exceptions\Dispatch\ActionInvalidException;
+use Pindex\Exceptions\Dispatch\ControllerNotFoundException;
+use Pindex\Exceptions\Dispatch\MethodNotExistException;
+use Pindex\Exceptions\Dispatch\ModuleNotFoundException;
 use Pindex\PindexException;
 
 /**
@@ -62,29 +67,43 @@ class Dispatcher {
      * @param string $modules
      * @param string $ctrler
      * @param string $action
-     * @return mixed
-     * @throws PindexException
+     * @param DispatchInstanceGeneraterInterface|null $generater
+     * @return mixed 方法返回什么就返回什么
+     * @throws ActionInvalidException
+     * @throws ControllerNotFoundException
+     * @throws MethodNotExistException
+     * @throws ModuleNotFoundException
      */
-    public static function exec($modules=null,$ctrler=null,$action=null){
+    public static function exec($modules=null,$ctrler=null,$action=null,DispatchInstanceGeneraterInterface $generater=null){
         null === $modules   and $modules = self::$_module;
         null === $ctrler    and $ctrler = self::$_controller;
         null === $action    and $action = self::$_action;
 
         PINDEX_DEBUG_MODE_ON and Debugger::trace($modules,$ctrler,$action);
 
-        $modulepath = PINDEX_PATH_APP."/{$modules}";//linux 不识别
+        if($generater){
+            $classInstance = $generater->fetchControllerInstance($modules,$ctrler);
+            $method = $generater->fetchActionInstance($modules,$ctrler,$action);
+        }else{
+            $modulepath = PINDEX_PATH_APP."/{$modules}";//linux 不识别
+            strpos($modules,'/') and $modules = str_replace('/','\\',$modules);
+            //模块检测
+            if(!is_dir($modulepath)){
+                throw new ModuleNotFoundException($modules);
+            }
 
-        strpos($modules,'/') and $modules = str_replace('/','\\',$modules);
-        //模块检测
-        is_dir($modulepath) or PindexException::throwing("Module '{$modules}' not found!");
-
-        //控制器名称及存实性检测
-        $className = PINDEX_APP_NAME."\\{$modules}\\Controller\\{$ctrler}";
-        class_exists($className) or PindexException::throwing($modules,$className);
-        $classInstance =  new $className();
-        //方法检测
-        method_exists($classInstance,$action) or PindexException::throwing($modules,$className,$action);
-        $method = new \ReflectionMethod($classInstance, $action);
+            //控制器名称及存实性检测
+            $className = PINDEX_APP_NAME."\\{$modules}\\Controller\\{$ctrler}";
+            if(!class_exists($className,true)){
+                throw new ControllerNotFoundException($className);
+            }
+            $classInstance =  new $className();
+            //方法检测
+            if(!method_exists($classInstance,$action)){
+                throw new MethodNotExistException($modules,$className,$action);
+            }
+            $method = new \ReflectionMethod($classInstance, $action);
+        }
 
         $result = null;
         if ($method->isPublic() and !$method->isStatic()) {//仅允许非静态的公开方法
@@ -97,14 +116,12 @@ class Dispatcher {
                 $result = $method->invoke($classInstance);
             }
         } else {
-            PindexException::throwing($className, $action);
+            throw new ActionInvalidException($method);
         }
 
         PINDEX_DEBUG_MODE_ON and Debugger::status('execute_end');
         return $result;
     }
-
-
 
     /**
      * 获取传递给盖饭昂奋的参数
@@ -147,8 +164,7 @@ class Dispatcher {
     public static function load($name,$type=Configger::TYPE_PHP){
         if(!defined('REQUEST_MODULE')) return PindexException::throwing('\'load\'必须在\'exec\'方法之后调用!');//前提是正确制定过exec方法
         $path = PINDEX_PATH_APP.'/'.REQUEST_MODULE.'/Common/Config/';
-
-        if(Storage::has($path) === Storage::IS_DIR){
+        if(is_dir($path)){
             $file = "{$path}/{$name}.".$type;
             return Configger::load($file);
         }

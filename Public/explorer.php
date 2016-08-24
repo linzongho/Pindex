@@ -12,6 +12,8 @@ const PINDEX_PAGE_TRACE_ON = true;
 include '../Pindex/engine.php';
 Pindex::init([
     'APP_NAME' => 'Explorer',
+    'ROUTER_PARSER'     => null,
+    'DISPATCH_HANDLER'  => null,
 ]);
 
-(new \Explorer\Application($GLOBALS['config']['setting_system']['first_in'], 'index'))->run();
+Pindex::start();

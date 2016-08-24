@@ -77,9 +77,11 @@ class Trace {
         //包含的文件数组
         $files  =  get_included_files();
         $info   =   [];
+        $len = strlen(PINDEX_PATH_BASE);
         foreach ($files as $key=>$file){
             $size = number_format(filesize($file)/1024,2);
             $perm = Storage::permission($file);
+            $file = substr($file,$len);
             $info[] = "{$file} (Size:{$size} KB/ Permission: {$perm})";
         }
 

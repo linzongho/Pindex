@@ -154,27 +154,6 @@ namespace Explorer{
 //	public $sub_dir ='';				//控制器子目录
         public $model = '';				//控制器对应模型  对象。
 
-        public function __construct($ctler='desktop',$actio='index'){
-
-        }
-
-        /**
-         * 设置默认的类名
-         * @param string $default_controller
-         */
-        public function setDefaultController($default_controller){
-            $this -> default_controller = $default_controller;
-        }
-
-        /**
-         * 设置默认的方法名
-         * @param string $default_action
-         * @return void
-         */
-        public function setDefaultAction($default_action){
-            $this -> default_action = $default_action;
-        }
-
         /**
          * 运行controller 的方法
          * @param $class , controller类名。
@@ -197,20 +176,6 @@ namespace Explorer{
             return $instance -> $function();
         }
 
-
-        /**
-         * 运行自动加载的控制器
-         */
-        private function autorun(){
-            global $config;
-            if (count($config['autorun']) > 0) {
-                foreach ($config['autorun'] as $key => $var) {
-                    $this->appRun($var['controller'],$var['function']);
-                }
-            }
-
-        }
-
         /**
          * 调用实际类和方式
          */
@@ -221,7 +186,12 @@ namespace Explorer{
             define('ST',$URI[0]);
             define('ACT',$URI[1]);
             //自动加载运行类。
-            $this->autorun();
+
+            if (count($GLOBALS['config']['autorun']) > 0) {
+                foreach ($GLOBALS['config']['autorun'] as $key => $var) {
+                    $this->appRun($var['controller'],$var['function']);
+                }
+            }
             $this->appRun(ST,ACT);
         }
     }

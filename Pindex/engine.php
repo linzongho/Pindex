@@ -12,6 +12,7 @@ namespace {
     use Pindex\Core\Dispatcher;
     use Pindex\Core\Router;
     use Pindex\Debugger;
+    use Pindex\Exceptions\ClassNotFoundException;
     use Pindex\Loader;
     use Pindex\PindexException;
     const PINDEX_VERSION = 0.1;
@@ -41,9 +42,7 @@ namespace {
     const PINDEX_IS_CLI = PHP_SAPI === 'cli';
     define('PINDEX_IS_WIN',false !== stripos(PHP_OS, 'WIN'));//const IS_WINDOWS = PHP_OS === 'WINNT';
 
-    if(PINDEX_IS_CLI){
-        include_once __DIR__.'console.engine.php';
-    }
+    PINDEX_IS_CLI and include_once __DIR__.'console.php';
 
 //---------------------------------- mode constant -------------------------------------//
     defined('PINDEX_DEBUG_MODE_ON') or define('PINDEX_DEBUG_MODE_ON', true);
@@ -112,8 +111,12 @@ namespace {
             'CACHE_URL_ON'      => false,
             'CACHE_PATH_ON'     => false,
 
+            //路由解析、构造参数列表
             'ROUTER_PARSER'         => null,
             'ROUTER_PARSER_CONFIG'  => null,
+            //调度器解析、构造参数列表
+            'DISPATCH_HANDLER'            => null,
+            'DISPATCH_HANDLER_CONFIG'     => null,
         ];
         /**
          * @var bool 标记是否需要初始化
@@ -170,6 +173,7 @@ namespace {
          * @static
          * @param array|null $config
          * @return void
+         * @throws ClassNotFoundException
          */
         public static function start(array $config=null){
             self::$_app_need_inited and self::init($config);
@@ -188,7 +192,16 @@ namespace {
                 Cache::begin($identify);
 
                 //parse uri
-                $result = Router::parse(self::$config['ROUTER_PARSER']);
+                if(self::$config['ROUTER_PARSER']){
+                    if(class_exists(self::$config['ROUTER_PARSER'])){
+                        $parser = new self::$config['ROUTER_PARSER'](self::$config['ROUTER_PARSER_CONFIG']);
+                    }else{
+                        throw new ClassNotFoundException(self::$config['ROUTER_PARSER']);
+                    }
+                }else{
+                    $parser = null;
+                }
+                $result = Router::parse($parser);
 //                \Pindex\println($result);exit();
                 //URL中解析结果合并到$_GET中，$_GET的其他参数不能和之前的一样，否则会被解析结果覆盖,注意到$_GET和$_REQUEST并不同步，当动态添加元素到$_GET中后，$_REQUEST中不会自动添加
                 empty($result['p']) or $_GET = array_merge($_GET,$result['p']);
@@ -209,7 +222,16 @@ namespace {
                     define('PINDEX_REQUEST_CONTROLLER',$ckres['c']);//请求的控制器
                     define('PINDEX_REQUEST_ACTION',$ckres['a']);//请求的操作
 
-                    $result = Dispatcher::exec();
+                    if(self::$config['DISPATCH_HANDLER']){
+                        if(class_exists(self::$config['DISPATCH_HANDLER'])){
+                            $parser = new self::$config['DISPATCH_HANDLER'](self::$config['DISPATCH_HANDLER_CONFIG']);
+                        }else{
+                            throw new ClassNotFoundException(self::$config['DISPATCH_HANDLER']);
+                        }
+                    }else{
+                        $parser = null;
+                    }
+                    $result = Dispatcher::exec(null,null,null,$parser);
                     //exec的结果将用于判断输出缓存，如果为int，表示缓存时间，0表示无限缓存XXX,将来将创造更多的扩展，目前仅限于int
 
                     if(isset($result)){

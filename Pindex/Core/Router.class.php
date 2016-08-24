@@ -65,17 +65,11 @@ class Router extends Lite{
     /**
      * @static
      * @param URLParseCreater|null $parser
-     * @param array|null $cparam
      * @return bool
      */
-    public static function parse(URLParseCreater $parser=null,array $cparam=null){
+    public static function parse(URLParseCreater $parser=null){
         if($parser){
-            if(class_exists($parser,true)){
-                $parser = new $parser($cparam);
-                return $parser->parse();
-            }else{
-
-            }
+            return $parser->parse();
         }
         return self::driver()->parse();
     }

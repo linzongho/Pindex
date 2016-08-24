@@ -65,7 +65,7 @@ class user extends Controller {
                 session_start();//re start
                 $_SESSION['kod_login'] = true;
                 $_SESSION['kod_user']= $user;
-                setcookie('kod_name', $_COOKIE['kod_name'], time()+3600*24*365); 
+                setcookie('kod_name', $_COOKIE['kod_name'], time()+3600*24*365);
                 setcookie('kod_token',$_COOKIE['kod_token'],time()+3600*24*365); //密码的MD5值再次md5
                 header('location:'.get_url());
                 exit;

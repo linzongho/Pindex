@@ -7,7 +7,7 @@
  * Time: 5:24 PM
  */
 
-namespace Core;
+namespace Pindex\Core\Router;
 use Pindex\Core\URLParseCreater;
 use Pindex\Debugger;
 use Pindex\PindexException;
@@ -74,7 +74,7 @@ class LiteRouter implements URLParseCreater{
         'SERVER_PORT'   => 80,
     ];
 
-    private function __construct(array $config=null){
+    public function __construct(array $config=null){
         $config and $this->config = array_merge($this->config,$config);
     }
 
