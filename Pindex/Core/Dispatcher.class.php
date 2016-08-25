@@ -42,11 +42,8 @@ class Dispatcher extends Lite{
      */
     private static $_config = [];
 
-    /**
-     * @param array|null $config
-     */
-    public static function init(array $config=null){
-        $config and self::$_config = array_merge(self::$_config,$config);
+    public static function __init(){
+        self::$_config = self::getConfig();
     }
 
     /**
