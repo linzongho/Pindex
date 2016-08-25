@@ -91,8 +91,4 @@ if (strtoupper(substr(PHP_OS, 0, 3)) === 'WIN') {
     $config['system_os'] = 'linux';
     $config['system_charset'] = 'utf-8';
 }
-$config['autorun'] = array(
-    array('controller' => 'user', 'function' => 'loginCheck'),
-    array('controller' => 'user', 'function' => 'authCheck')
-);
 return $config;

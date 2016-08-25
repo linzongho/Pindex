@@ -7,19 +7,32 @@
  * Time: 11:01 AM
  */
 namespace Pindex\Core;
-use Pindex\Core\Dispatcher\DispatchInstanceGeneraterInterface;
 use Pindex\Debugger;
-use Pindex\Exceptions\Dispatch\ActionInvalidException;
 use Pindex\Exceptions\Dispatch\ControllerNotFoundException;
 use Pindex\Exceptions\Dispatch\MethodNotExistException;
 use Pindex\Exceptions\Dispatch\ModuleNotFoundException;
+use Pindex\Exceptions\Dispatch\ActionInvalidException;
+use Pindex\Interfaces\Core\DispatcherInterface;
+use Pindex\Lite;
 use Pindex\PindexException;
 
 /**
  * Class Dispatcher
  * @package Pindex\Core
  */
-class Dispatcher {
+class Dispatcher extends Lite{
+
+    const CONF_NAME = 'dispatcher';
+    const CONF_CONVENTION = [
+        //空缺时默认补上,Done!
+        'INDEX_MODULE'      => 'Home',
+        'INDEX_CONTROLLER'  => 'Index',
+        'INDEX_ACTION'      => 'index',
+        'DRIVER_DEFAULT_INDEX' => 0,//默认驱动ID，类型限定为int或者string
+        'DRIVER_CLASS_LIST' => [
+            'Pindex\\Core\\Dispatcher\\LiteDispatcher',
+        ],//驱动类的列表
+    ];
 
     private static $_module = null;
     private static $_controller = null;
@@ -27,12 +40,7 @@ class Dispatcher {
     /**
      * @var array
      */
-    private static $_config = [
-        //空缺时默认补上,Done!
-        'INDEX_MODULE'      => 'Home',
-        'INDEX_CONTROLLER'  => 'Index',
-        'INDEX_ACTION'      => 'index',
-    ];
+    private static $_config = [];
 
     /**
      * @param array|null $config
@@ -63,64 +71,31 @@ class Dispatcher {
     }
 
     /**
+     * @var DispatcherInterface
+     */
+    private static $driver = null;
+
+    /**
      * 制定对应的方法
      * @param string $modules
      * @param string $ctrler
      * @param string $action
-     * @param DispatchInstanceGeneraterInterface|null $generater
+     * @param array $parameter
      * @return mixed 方法返回什么就返回什么
      * @throws ActionInvalidException
      * @throws ControllerNotFoundException
      * @throws MethodNotExistException
      * @throws ModuleNotFoundException
      */
-    public static function exec($modules=null,$ctrler=null,$action=null,DispatchInstanceGeneraterInterface $generater=null){
+    public static function exec($modules=null,$ctrler=null,$action=null,array $parameter=[]){
         null === $modules   and $modules = self::$_module;
         null === $ctrler    and $ctrler = self::$_controller;
         null === $action    and $action = self::$_action;
 
         PINDEX_DEBUG_MODE_ON and Debugger::trace($modules,$ctrler,$action);
 
-        if($generater){
-            $classInstance = $generater->fetchControllerInstance($modules,$ctrler);
-            $method = $generater->fetchActionInstance($modules,$ctrler,$action);
-        }else{
-            $modulepath = PINDEX_PATH_APP."/{$modules}";//linux 不识别
-            strpos($modules,'/') and $modules = str_replace('/','\\',$modules);
-            //模块检测
-            if(!is_dir($modulepath)){
-                throw new ModuleNotFoundException($modules);
-            }
-
-            //控制器名称及存实性检测
-            $className = PINDEX_APP_NAME."\\{$modules}\\Controller\\{$ctrler}";
-            if(!class_exists($className,true)){
-                throw new ControllerNotFoundException($className);
-            }
-            $classInstance =  new $className();
-            //方法检测
-            if(!method_exists($classInstance,$action)){
-                throw new MethodNotExistException($modules,$className,$action);
-            }
-            $method = new \ReflectionMethod($classInstance, $action);
-        }
-
-        $result = null;
-        if ($method->isPublic() and !$method->isStatic()) {//仅允许非静态的公开方法
-            //方法的参数检测
-            if ($method->getNumberOfParameters()) {//有参数
-                $args = self::fetchMethodArgs($method);
-                //执行方法
-                $result = $method->invokeArgs($classInstance, $args);
-            } else {//无参数的方法调用
-                $result = $method->invoke($classInstance);
-            }
-        } else {
-            throw new ActionInvalidException($method);
-        }
-
-        PINDEX_DEBUG_MODE_ON and Debugger::status('execute_end');
-        return $result;
+        self::$driver = self::driver();
+        return self::$driver->dispatch($modules,$ctrler,$action,$parameter);
     }
 
     /**
@@ -129,7 +104,7 @@ class Dispatcher {
      * @return array
      * @throws PindexException
      */
-    private static function fetchMethodArgs(\ReflectionMethod $targetMethod){
+    public static function fetchMethodArgs(\ReflectionMethod $targetMethod){
         //获取输入参数
         $vars = $args = [];
         switch(strtoupper($_SERVER['REQUEST_METHOD'])){

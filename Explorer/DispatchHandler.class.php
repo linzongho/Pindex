@@ -8,8 +8,8 @@
  */
 
 namespace Explorer;
-use Pindex\Core\Dispatcher\DispatchInstanceGeneraterInterface;
 use Pindex\Exceptions\Dispatch\MethodNotExistException;
+use Pindex\Interfaces\Core\DispatchInstanceGeneraterInterface;
 
 class DispatchHandler implements DispatchInstanceGeneraterInterface {
     /**
@@ -58,5 +58,54 @@ class DispatchHandler implements DispatchInstanceGeneraterInterface {
         }
         $actions[] = new \ReflectionMethod($classInstance, $action);
         return $actions;
+    }
+
+    private $module = null;
+    private $controller = null;
+    private $action = null;
+
+    /**
+     * 设置调度需要的模块、控制器、操作信息
+     * @param string|array $module
+     * @param string|array $controller
+     * @param string|array $action
+     * @return void
+     */
+    public function setParameters($module, $controller, $action)
+    {
+        $this->module = is_array($module)?$module:[$module];
+        $this->controller = is_array($controller)?$controller:[$controller];
+        $this->action = is_array($action)?$action:[$action];
+    }
+
+    /**
+     * @return object
+     */
+    public function nextController()
+    {
+        static $flag = 0;
+        if(isset($this->controller[$flag])){
+            $controller = $this->controller[$flag];
+            include_once PINDEX_PATH_BASE.'/Explorer/Controller/'.$controller.'.class.php';
+            $flag ++;
+            return new $controller();
+        }
+        return null;
+    }
+
+    /**
+     * @return \ReflectionMethod
+     */
+    public function nextAction()
+    {
+        // TODO: Implement nextAction() method.
+    }
+
+    /**
+     * @return bool
+     */
+    public function hasNext()
+    {
+        // TODO: Implement hasNext() method.
     }
 }

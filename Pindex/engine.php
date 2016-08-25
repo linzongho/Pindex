@@ -13,6 +13,7 @@ namespace {
     use Pindex\Core\Router;
     use Pindex\Debugger;
     use Pindex\Exceptions\ClassNotFoundException;
+    use Pindex\Exceptions\RouteParseFailedException;
     use Pindex\Loader;
     use Pindex\PindexException;
     const PINDEX_VERSION = 0.1;
@@ -174,6 +175,7 @@ namespace {
          * @param array|null $config
          * @return void
          * @throws ClassNotFoundException
+         * @throws RouteParseFailedException
          */
         public static function start(array $config=null){
             self::$_app_need_inited and self::init($config);
@@ -202,17 +204,27 @@ namespace {
                     $parser = null;
                 }
                 $result = Router::parse($parser);
-//                \Pindex\println($result);exit();
+                if($result !== true){
+                    \Pindex\println($result,true);
+                    throw new RouteParseFailedException($parser);
+                }
+//                \Pindex\println($result,true);
                 //URL中解析结果合并到$_GET中，$_GET的其他参数不能和之前的一样，否则会被解析结果覆盖,注意到$_GET和$_REQUEST并不同步，当动态添加元素到$_GET中后，$_REQUEST中不会自动添加
-                empty($result['p']) or $_GET = array_merge($_GET,$result['p']);
+                $input_p = Router::getParameters();
+                $input_p and $_GET = array_merge($_GET,$input_p);
 
                 Debugger::status('dispatch_begin');
+                $input_m = Router::getModules();
+                $input_c = Router::getController();
+                $input_a = Router::getAction();
                 //dispatch
-                $ckres = Dispatcher::checkDefault($result['m'],$result['c'],$result['a']);
+                $ckres = Dispatcher::checkDefault($input_m,$input_c,$input_a);
 
+                //获取路径特征标识符
                 $pidentify = self::$config['CACHE_PATH_ON']?str_replace('/','_',"{$ckres['m']}_{$ckres['c']}_{$ckres['a']}"):null;
-
+                //判断该特征标识符的缓存是否存在，缓存存在时直接输出，否则进行调度
                 $content = $pidentify?Cache::get($pidentify,null):null;
+
                 if(null !== $content){
                     Debugger::trace('load from path cache');
                     echo $content;
@@ -222,16 +234,7 @@ namespace {
                     define('PINDEX_REQUEST_CONTROLLER',$ckres['c']);//请求的控制器
                     define('PINDEX_REQUEST_ACTION',$ckres['a']);//请求的操作
 
-                    if(self::$config['DISPATCH_HANDLER']){
-                        if(class_exists(self::$config['DISPATCH_HANDLER'])){
-                            $parser = new self::$config['DISPATCH_HANDLER'](self::$config['DISPATCH_HANDLER_CONFIG']);
-                        }else{
-                            throw new ClassNotFoundException(self::$config['DISPATCH_HANDLER']);
-                        }
-                    }else{
-                        $parser = null;
-                    }
-                    $result = Dispatcher::exec(null,null,null,$parser);
+                    $result = Dispatcher::exec();
                     //exec的结果将用于判断输出缓存，如果为int，表示缓存时间，0表示无限缓存XXX,将来将创造更多的扩展，目前仅限于int
 
                     if(isset($result)){
@@ -913,7 +916,7 @@ namespace Pindex {
          * @return mixed
          */
         public static function __callStatic($method, $arguments) {
-            $driver = self::driver();
+            $driver = static::driver();
             if(!method_exists($driver,$method)){
                 $clsnm = static::class;
                 PindexException::throwing("方法'{$method}'不存在于驱动类'{$clsnm}'中!");

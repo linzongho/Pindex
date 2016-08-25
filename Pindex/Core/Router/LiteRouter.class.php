@@ -8,8 +8,8 @@
  */
 
 namespace Pindex\Core\Router;
-use Pindex\Core\URLParseCreater;
 use Pindex\Debugger;
+use Pindex\Interfaces\Core\URLParseCreaterInterface;
 use Pindex\PindexException;
 use Pindex\Utils;
 
@@ -18,7 +18,7 @@ use Pindex\Utils;
  * 内置URL解析创建驱动
  * @package Core
  */
-class LiteRouter implements URLParseCreater{
+class LiteRouter implements URLParseCreaterInterface{
 
     private $config = [
         //------------------------
@@ -91,17 +91,19 @@ class LiteRouter implements URLParseCreater{
 
     /**
      * 解析URL或兼域名
-     * @return array
+     * @return bool
      */
     public function parse(){
         $result = null;
         if($this->config['URI_ROUTE_ON']){
             $result = $this->parseRoute();
             if(null !== $result){
-                return $this->result = $result;
+                $this->result = $result;
+                return true;
             }
         }
-        return $this->result = $this->parseURL();
+        $this->result = $this->parseURL();
+        return true;
     }
 
     /**
@@ -127,7 +129,13 @@ class LiteRouter implements URLParseCreater{
     public function getAction(){
         return $this->result['a'];
     }
-
+    /**
+     * 获取输入参数
+     * @return array
+     */
+    public function getParameters(){
+        return [];
+    }
     /**
      * 解析路由规则
      * @param string|null $url 请求路径

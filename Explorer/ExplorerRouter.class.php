@@ -9,7 +9,7 @@
 
 namespace Explorer;
 use Pindex\Core\Configger;
-use Pindex\Core\URLParseCreater;
+use Pindex\Interfaces\Core\URLParseCreaterInterface;
 use Pindex\Util\SEK;
 
 define('ENTRY_NAME','explorer.php');
@@ -128,7 +128,7 @@ if (isset($setting['powerby'])) {
 $GLOBALS['config']['setting_system'] = $setting;//全局
 
 
-class ExplorerRouter implements URLParseCreater
+class ExplorerRouter implements URLParseCreaterInterface
 {
 
     public $default_controller = 'desktop';	//默认的类名
@@ -149,16 +149,16 @@ class ExplorerRouter implements URLParseCreater
      * @return bool
      */
     public function parse(){
-        global $_GET, $_POST,$_COOKIE;
-        $_COOKIE = stripslashes_deep($_COOKIE);
-        $_GET	 = stripslashes_deep($_GET);
-        $_POST	 = stripslashes_deep($_POST);
+//        $_COOKIE = stripslashes_deep($_COOKIE);
+//        $_GET	 = stripslashes_deep($_GET);
+//        $_POST	 = stripslashes_deep($_POST);
         $return = array_merge($_GET,$_POST);
         $remote = array_get($return,0);
         $return['URLremote'] = explode('/',trim($remote[0],'/'));
-        $this->result[0] = $return['URLremote'][0];
-        $this->result[1] = $return['URLremote'][1];
+        $this->result[0] = isset($return['URLremote'][0])?$return['URLremote'][0]:$this->default_controller;
+        $this->result[1] = isset($return['URLremote'][1])?$return['URLremote'][1]:$this->default_action;
         $GLOBALS['in'] = $return;
+//        \Pindex\println($this->result,true);
         return true;
     }
 
@@ -186,7 +186,9 @@ class ExplorerRouter implements URLParseCreater
      * @return string
      */
     public function getController(){
-        return $this->result[0];
+        return [
+            'user','loginCheck',$this->result[0]
+        ];
     }
 
     /**
@@ -194,7 +196,16 @@ class ExplorerRouter implements URLParseCreater
      * @return string
      */
     public function getAction(){
-        return $this->result[1];
+        return [
+            'user','authCheck',$this->result[1]
+        ];
     }
 
+    /**
+     * 获取输入参数
+     * @return array
+     */
+    public function getParameters(){
+        return [];
+    }
 }

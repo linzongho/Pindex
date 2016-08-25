@@ -7,46 +7,14 @@
  * Time: 10:55 AM
  */
 namespace Pindex\Core;
+use Pindex\Interfaces\Core\URLParseCreaterInterface;
 use Pindex\Lite;
 
-interface URLParseCreater {
-    /**
-     * 解析URL或兼域名
-     * @return bool
-     */
-    public function parse();
-
-    /**
-     * 创建URL
-     * @param string|array $modules 模块序列
-     * @param string $contler 控制器名称
-     * @param string $action 操作名称
-     * @param array|null $params 参数
-     * @return string 可以访问的URI
-     */
-    public function create($modules,$contler,$action,array $params=null);
-
-    /**
-     * 获取解析的模块，多个模块使用'/'分隔
-     * @return string
-     */
-    public function getModules();
-
-    /**
-     * 获取控制器
-     * @return string
-     */
-    public function getController();
-
-    /**
-     * 获取操作名称
-     * @return string
-     */
-    public function getAction();
-
-}
-
-
+/**
+ * Class Router
+ *
+ * @package Pindex\Core
+ */
 class Router extends Lite{
 
     const CONF_NAME = 'route';
@@ -61,25 +29,85 @@ class Router extends Lite{
             ]
         ],//驱动类列表参数
     ];
+    /**
+     * @var URLParseCreaterInterface
+     */
+    private static $_parser = null;
 
     /**
+     * 解析路由及URL
      * @static
-     * @param URLParseCreater|null $parser
+     * @param URLParseCreaterInterface|null $parser
      * @return bool
      */
-    public static function parse(URLParseCreater $parser=null){
-        if($parser){
-            return $parser->parse();
+    public static function parse(URLParseCreaterInterface $parser=null){
+        $parser and self::$_parser = $parser;
+        if(self::$_parser){
+            return self::$_parser->parse();
         }
         return self::driver()->parse();
     }
 
-    public static function create($modules,$contler,$action,array $params=null,URLParseCreater $parser=null){
-        if($parser){
-            return $parser->create($modules,$contler,$action,$params);
+    /**
+     * 获取解析的模块，多个模块使用'/'分隔
+     * @return string
+     */
+    public static function getModules(){
+        if(self::$_parser){
+            return self::$_parser->getModules();
+        }
+        return self::driver()->getModules();
+    }
+
+    /**
+     * 获取控制器
+     * @return string
+     */
+    public static function getController(){
+        if(self::$_parser){
+            return self::$_parser->getController();
+        }
+        return self::driver()->getController();
+    }
+
+    /**
+     * 获取操作名称
+     * @return string
+     */
+    public static function getAction(){
+        if(self::$_parser){
+            return self::$_parser->getAction();
+        }
+        return self::driver()->getAction();
+    }
+
+    /**
+     * 获取输入参数
+     * @return array
+     */
+    public static function getParameters(){
+        return [];
+    }
+
+    /**
+     * 创建系统可以识别的URL
+     * @static
+     * @param $modules
+     * @param $contler
+     * @param $action
+     * @param array|null $params
+     * @param URLParseCreaterInterface|null $parser
+     * @return string
+     */
+    public static function create($modules,$contler,$action,array $params=null,URLParseCreaterInterface $parser=null){
+        static $_parser = null;
+        $parser and $_parser = $parser;
+        if($_parser){
+            return $_parser->create($modules,$contler,$action,$params);
         }
         return self::driver()->create($modules,$contler,$action,$params);
     }
+
 
     /**
      * $url规则如：

@@ -12,8 +12,8 @@ const PINDEX_PAGE_TRACE_ON = true;
 include '../Pindex/engine.php';
 Pindex::init([
     'APP_NAME' => 'Explorer',
-    'ROUTER_PARSER'     => null,
-    'DISPATCH_HANDLER'  => null,
+    'ROUTER_PARSER'     => 'Explorer\\ExplorerRouter',
+    'DISPATCH_HANDLER'  => 'Explorer\\DispatchHandler',
 ]);
 
 Pindex::start();
