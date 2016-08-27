@@ -13,6 +13,13 @@ use Pindex\Lite;
 /**
  * Class Router
  *
+ * @method bool parse() 解析URL或兼域名
+ * @method string getModules() 获取解析的模块，多个模块使用'/'分隔
+ * @method string getController() 获取控制器
+ * @method string getAction() 获取操作名称
+ * @method array getParameters() 获取输入参数
+ * @method string create(string|array $modules,string $contler,string $action,array $params=[]) 创建URL
+ *
  * @package Pindex\Core
  */
 class Router extends Lite{
@@ -32,82 +39,7 @@ class Router extends Lite{
     /**
      * @var URLParseCreaterInterface
      */
-    private static $_parser = null;
-
-    /**
-     * 解析路由及URL
-     * @static
-     * @param URLParseCreaterInterface|null $parser
-     * @return bool
-     */
-    public static function parse(URLParseCreaterInterface $parser=null){
-        $parser and self::$_parser = $parser;
-        if(self::$_parser){
-            return self::$_parser->parse();
-        }
-        return self::driver()->parse();
-    }
-
-    /**
-     * 获取解析的模块，多个模块使用'/'分隔
-     * @return string
-     */
-    public static function getModules(){
-        if(self::$_parser){
-            return self::$_parser->getModules();
-        }
-        return self::driver()->getModules();
-    }
-
-    /**
-     * 获取控制器
-     * @return string
-     */
-    public static function getController(){
-        if(self::$_parser){
-            return self::$_parser->getController();
-        }
-        return self::driver()->getController();
-    }
-
-    /**
-     * 获取操作名称
-     * @return string
-     */
-    public static function getAction(){
-        if(self::$_parser){
-            return self::$_parser->getAction();
-        }
-        return self::driver()->getAction();
-    }
-
-    /**
-     * 获取输入参数
-     * @return array
-     */
-    public static function getParameters(){
-        return [];
-    }
-
-    /**
-     * 创建系统可以识别的URL
-     * @static
-     * @param $modules
-     * @param $contler
-     * @param $action
-     * @param array|null $params
-     * @param URLParseCreaterInterface|null $parser
-     * @return string
-     */
-    public static function create($modules,$contler,$action,array $params=null,URLParseCreaterInterface $parser=null){
-        static $_parser = null;
-        $parser and $_parser = $parser;
-        if($_parser){
-            return $_parser->create($modules,$contler,$action,$params);
-        }
-        return self::driver()->create($modules,$contler,$action,$params);
-    }
-
+    protected $_driver = null;
 
     /**
      * $url规则如：
@@ -119,10 +51,7 @@ class Router extends Lite{
      */
     public static function url($url=null,array $params=[]){
         //解析参数中的$url
-        empty($params) and $params = [];
-        if(!$url){
-            return self::create(null,null,null,$params);
-        }
+        $params or $params = [];
         $hashpos = strpos($url,'#');
         if($hashpos){
             $hash = substr($url,$hashpos+1);
@@ -136,33 +65,10 @@ class Router extends Lite{
         $action  = array_pop($parts);
         $ctler   = $action?array_pop($parts):null;
         $modules = $ctler?$parts:null;
-        $url = self::create($modules,$ctler,$action,$params);
+        $url = self::instance()->create($modules,$ctler,$action,$params);
 //        \Pindex\dumpout($modules,$ctler,$action,$url);
         if($hash) $url .= '#'.$hash;
         return $url;
     }
 
-    /**
-     * 重定向
-     * @param string $url 重定向地址
-     * @param int $time
-     * @param string $message
-     * @return void
-     */
-    public static function redirect($url,$time=0,$message=''){
-        //多行URL地址支持
-        $url = str_replace(['\n','\r'], '', $url);
-        $message or $message = "系统将在{$time}秒之后自动跳转到{$url}！";
-
-        if(headers_sent()){//检查头部是否已经发送
-            exit("<meta http-equiv='Refresh' content='{$time};URL={$url}'>{$message}");
-        }else{
-            if(0 === $time){
-                header('Location: ' . $url);
-            }else{
-                header("refresh:{$time};url={$url}");
-                exit($message);
-            }
-        }
-    }
 }

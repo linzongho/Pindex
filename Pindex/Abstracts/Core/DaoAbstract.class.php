@@ -7,7 +7,7 @@
  * Date: 8/25/16
  * Time: 9:04 AM
  */
-namespace Pindex\Core\Abstracts;
+namespace Pindex\Abstracts\Core;
 use PDO;
 use Pindex\Exceptions\Database\ConnectFailedException;
 use PDOException;

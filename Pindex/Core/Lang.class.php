@@ -12,5 +12,8 @@ namespace Pindex\Core;
 
 class Lang {
 
+    public static function t(){
+
+    }
 
 }

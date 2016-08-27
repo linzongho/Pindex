@@ -10,33 +10,10 @@
 namespace Pindex\Core;
 use Pindex\Lite;
 use Pindex\PindexException;
-
-/**
- * Interface LogInterface 日志接口
- * Interface LoggerInterface
- */
-interface LoggerInterface {
-
-    /**
-     * 写入日志信息
-     * 如果日志文件已经存在，则追加到文件末尾
-     * @param string $key 日志文件位置或者标识符（一个日志文件或者日志组是唯一的）
-     * @param string|array $content 日志内容
-     * @return bool 写入是否成功
-     */
-    public function write($key, $content);
-
-    /**
-     * 读取日志文件内容
-     * 如果设置了参数二，则参数一将被认定为文件名
-     * @param string $key 日志文件位置或者标识符（一个日志文件或者日志组是唯一的）
-     * @return string|null 返回日志内容,指定的日志不存在时返回null
-     */
-    public function read($key);
-
-}
 /**
  * Class Log 日志管理类
+ * @method bool write(string $content,string $path) static 写入日志信息
+ * @method bool read(string $path) static 读取日志文件内容
  * @package Kbylin\System\Core
  */
 class Logger extends Lite {
@@ -108,31 +85,7 @@ class Logger extends Lite {
         return $path;
     }
 
-    /**
-     * 写入日志信息
-     * 如果日志文件已经存在，则追加到文件末尾
-     * @param string|array $content 日志内容
-     * @param string $level 日志级别
-     * @return string 写入内容返回
-     * @Exception FileWriteFailedException
-     */
-    public static function write($content,$level=self::LEVEL_DEBUG){
-        is_string($content) or $content = var_export($content,true);
-        return self::driver()->write(self::getLogName($level),$content);
-    }
-
-    /**
-     * 读取日志文件内容
-     * 如果设置了参数二，则参数一将被认定为文件名
-     * @param string $datetime 日志文件生成的大致时间，记录频率为天时为yyyy-mm-dd,日志频率为时的时候为yyyy-mmmm-dd:hh
-     * @param null|string $level 日志级别
-     * @return string|array 如果按小时写入，则返回数组
-     */
-    public static function read($datetime, $level=self::LEVEL_DEBUG){
-        return self::driver()->read(self::getLogName($level,$datetime));
-    }
-
-//----------------------------------------------------------------------------------------------------------//
+//--------------------------------------- 内置的静态方法:record + save  -------------------------------------------------------------------//
     /**
      * 记录日志 并且会过滤未经设置的级别
      * @static
@@ -158,35 +111,22 @@ class Logger extends Lite {
      * @return void
      */
     public static function save($destination='') {
-        if(!empty(self::$records)){
+        if(self::$records){
             $message    =   implode('',self::$records);
-            self::_write($message,$destination);
-            // 保存后清空日志缓存
-            self::$records = array();
-        }
-    }
 
-    /**
-     * 日志写入接口
-     * @access public
-     * @param string $log 日志信息
-     * @param string $destination 写入文件
-     * @return void
-     */
-    public static function _write($log,$destination='') {
-        $config = self::getConfig();
-        $now = date($config['TIME_FORMAT']);
-        $destination or $destination = self::getLogName(self::LEVEL_RECORD);
-        // 自动创建日志目录
-        $log_dir = dirname($destination);
-        if (!is_dir($log_dir)) {
-            mkdir($log_dir, 0755, true);
+            $config = self::getConfig();
+            $now = date($config['TIME_FORMAT']);
+            $destination or $destination = self::getLogName(self::LEVEL_RECORD);
+            // 自动创建日志目录
+            $log_dir = dirname($destination);
+            if (!is_dir($log_dir)) {
+                mkdir($log_dir, 0755, true);
+            }
+            //TODO:检测日志文件大小，超过配置大小则备份日志文件重新生成
+            error_log("[{$now}] ".$_SERVER['REMOTE_ADDR'].' '.$_SERVER['REQUEST_URI']."\r\n{$message}\r\n", 3,$destination);
+            // 保存后清空日志缓存
+            self::$records = [];
         }
-        //检测日志文件大小，超过配置大小则备份日志文件重新生成
-//        if(is_file($destination) && floor($config['FILE_SIZE']) <= filesize($destination) ){
-//            rename($destination,dirname($destination).'/'.time().'-'.basename($destination));
-//        }
-        error_log("[{$now}] ".$_SERVER['REMOTE_ADDR'].' '.$_SERVER['REQUEST_URI']."\r\n{$log}\r\n", 3,$destination);
     }
 }
 //一旦该类加载进来，那么这段语句必定执行，无需手动调用

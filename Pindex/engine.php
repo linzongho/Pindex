@@ -40,6 +40,10 @@ namespace {
     const ONE_WEEK  = 604800;
     const ONE_MONTH = 2592000;
 
+    //自动获取
+    const AUTOGET = null;
+    const EMPTYCONF = null;
+
     const PINDEX_IS_CLI = PHP_SAPI === 'cli';
     define('PINDEX_IS_WIN',false !== stripos(PHP_OS, 'WIN'));//const IS_WINDOWS = PHP_OS === 'WINNT';
 
@@ -112,12 +116,9 @@ namespace {
             'CACHE_URL_ON'      => false,
             'CACHE_PATH_ON'     => false,
 
-            //路由解析、构造参数列表
-            'ROUTER_PARSER'         => null,
-            'ROUTER_PARSER_CONFIG'  => null,
-            //调度器解析、构造参数列表
-            'DISPATCH_HANDLER'            => null,
-            'DISPATCH_HANDLER_CONFIG'     => null,
+            //Core驱动名
+            'ROUTER_INDEX'      => AUTOGET,//路由
+            'DISPATCHER_INDEX'    => AUTOGET,//调度器
         ];
         /**
          * @var bool 标记是否需要初始化
@@ -129,7 +130,7 @@ namespace {
          * @static
          * @param array $config 系统配置
          */
-        public static function init(array $config=null){
+        public static function init(array $config=EMPTYCONF){
             Debugger::import('app_begin',$GLOBALS['litex_begin']);
             Debugger::status('app_init_begin');
             $config and self::$config = array_merge(self::$config,$config);
@@ -177,7 +178,7 @@ namespace {
          * @throws ClassNotFoundException
          * @throws RouteParseFailedException
          */
-        public static function start(array $config=null){
+        public static function start(array $config=EMPTYCONF){
             self::$_app_need_inited and self::init($config);
 
             //执行服务端程序
@@ -194,34 +195,30 @@ namespace {
                 Cache::begin($identify);
 
                 //parse uri
-                if(self::$config['ROUTER_PARSER']){
-                    if(class_exists(self::$config['ROUTER_PARSER'])){
-                        $parser = new self::$config['ROUTER_PARSER'](self::$config['ROUTER_PARSER_CONFIG']);
-                    }else{
-                        throw new ClassNotFoundException(self::$config['ROUTER_PARSER']);
-                    }
-                }else{
-                    $parser = null;
+                Debugger::status('route_begin');
+                $router = Router::instance(self::$config['ROUTER_INDEX']);
+                $outerback = $router->parse();
+                if($outerback !== true){
+                    \Pindex\println($outerback,true);
+                    throw new RouteParseFailedException($router);
                 }
-                $result = Router::parse($parser);
-                if($result !== true){
-                    \Pindex\println($result,true);
-                    throw new RouteParseFailedException($parser);
-                }
-//                \Pindex\println($result,true);
                 //URL中解析结果合并到$_GET中，$_GET的其他参数不能和之前的一样，否则会被解析结果覆盖,注意到$_GET和$_REQUEST并不同步，当动态添加元素到$_GET中后，$_REQUEST中不会自动添加
-                $input_p = Router::getParameters();
-                $input_p and $_GET = array_merge($_GET,$input_p);
-
+                $rq_params = $router->getParameters();
+                $rq_params and $_GET = array_merge($_GET,$rq_params);
+                $rq_module  = $router->getModules();
+                $rq_contler = $router->getController();
+                $rq_action  = $router->getAction();
                 Debugger::status('dispatch_begin');
-                $input_m = Router::getModules();
-                $input_c = Router::getController();
-                $input_a = Router::getAction();
-                //dispatch
-                $ckres = Dispatcher::checkDefault($input_m,$input_c,$input_a);
 
+
+                //dispatch
+                $dispatcher = Dispatcher::instance(self::$config['DISPATCHER_INDEX']);
+                $dispatcher->check($rq_module,$rq_contler,$rq_action);
+                $rq_module  = $dispatcher->getModule();
+                $rq_contler = $dispatcher->getController();
+                $rq_action  = $dispatcher->getAction();
                 //获取路径特征标识符
-                $pidentify = self::$config['CACHE_PATH_ON']?str_replace('/','_',"{$ckres['m']}_{$ckres['c']}_{$ckres['a']}"):null;
+                $pidentify = self::$config['CACHE_PATH_ON']?str_replace('/','_',"{$rq_module}_{$rq_contler}_{$rq_action}"):null;
                 //判断该特征标识符的缓存是否存在，缓存存在时直接输出，否则进行调度
                 $content = $pidentify?Cache::get($pidentify,null):null;
 
@@ -229,23 +226,23 @@ namespace {
                     Debugger::trace('load from path cache');
                     echo $content;
                 }else{
-                    //在执行方法之前定义常量,为了能在控制器的构造函数中使用这三个常量
-                    define('PINDEX_REQUEST_MODULE',$ckres['m']);//请求的模块
-                    define('PINDEX_REQUEST_CONTROLLER',$ckres['c']);//请求的控制器
-                    define('PINDEX_REQUEST_ACTION',$ckres['a']);//请求的操作
+                    //在执行方法之前定义常量,为了能在控制器的构造函数中使用这三个常量::::define后面不可以接数组
+                    define('PINDEX_REQUEST_MODULE',     is_array($rq_module)?end($rq_module):$rq_module);//请求的模块
+                    define('PINDEX_REQUEST_CONTROLLER', is_array($rq_contler)?end($rq_contler):$rq_contler);//请求的控制器
+                    define('PINDEX_REQUEST_ACTION',     is_array($rq_action)?end($rq_action):$rq_action);//请求的操作
 
-                    $result = Dispatcher::exec();
+                    $actionback = $dispatcher->dispatch($rq_module,$rq_contler,$rq_action);
                     //exec的结果将用于判断输出缓存，如果为int，表示缓存时间，0表示无限缓存XXX,将来将创造更多的扩展，目前仅限于int
 
-                    if(isset($result)){
-                        if (0 == $result) $result = ONE_DAY;//'无限缓存' will cause some problem
+                    if(isset($actionback)){
+                        if (0 == $actionback) $actionback = ONE_DAY;//'无限缓存' will cause some problem
                         //it will not dispear if time not expire, remove it by hand in runtime directory!
                         if(self::$config['CACHE_URL_ON']){
-                            echo Cache::end($result,$identify);
+                            echo Cache::end($actionback,$identify);
                             Debugger::trace('build url cache done!');
                         }
                         if(self::$config['CACHE_PATH_ON']){
-                            echo Cache::end($result,$identify);
+                            echo Cache::end($actionback,$identify);
                             Debugger::trace('build path cache done!');
                         }
                     }else{
@@ -291,6 +288,8 @@ namespace {
 namespace Pindex {
     use Pindex\Core\Configger;
     use Pindex\Core\Response;
+    use Pindex\Exceptions\InstanceNotExistException;
+    use Pindex\Exceptions\ParameterInvalidException;
     use Pindex\Util\Trace;
 
     class Utils {
@@ -729,7 +728,7 @@ namespace Pindex {
          * @param null|string $clsnm class-name
          * @return void
          */
-        public static function __initializationize($clsnm=null){
+        public static function __initializationize($clsnm=AUTOGET){
             $clsnm or $clsnm = static::class;
             if(!isset(self::$_cs[$clsnm])){
                 //get convention
@@ -785,37 +784,31 @@ namespace Pindex {
          * @param string $clsnm class name ,it will always be driver name if value set to re-null
          * @param string|int $identify Instance identify
          * @return object
+         * @throws ParameterInvalidException
          */
-        public static function getInstance($config=null,$clsnm=null,$identify=null){
-            isset($clsnm) or $clsnm = static::class;
-            isset($identify) or $identify = self::_getIdentify();
+        public static function getInstance($config=null,$clsnm=AUTOGET,$identify=null){
+            $clsnm === null and $clsnm = static::class;
+            if(null === $identify){
+                switch (gettype($config)){
+                    case TYPE_ARRAY:
+                        $identify = Utils::dataSign($config);
+                        break;
+                    case TYPE_FLOAT:
+                    case TYPE_INT:
+                    case TYPE_STR:
+                        $identify = (string) $config;
+                        break;
+                    case TYPE_NULL:
+                        $identify = 0;
+                        break;
+                    default:
+                        throw new ParameterInvalidException($config);
+                }
+            }
             if(!isset(self::$_is[$clsnm][$identify])){
-                self::$_is[$clsnm][$identify] = new $clsnm($config);
+                self::$_is[$clsnm][$identify] = null === $config ? new $clsnm($config) :new $clsnm();
             }
             return self::$_is[$clsnm][$identify];
-        }
-
-        /**
-         * @param null $config
-         * @return int|mixed|string
-         */
-        private static function _getIdentify($config=null){
-            switch (gettype($config)){
-                case TYPE_ARRAY:
-                    $identify = Utils::dataSign($config);
-                    break;
-                case TYPE_FLOAT:
-                case TYPE_INT:
-                case TYPE_STR:
-                    $identify = (string) $config;
-                    break;
-                case TYPE_NULL:
-                    $identify = 0;
-                    break;
-                default:
-                    return PindexException::throwing('Invalid parameter!',$config);
-            }
-            return $identify;
         }
 
         /**
@@ -824,7 +817,7 @@ namespace Pindex {
          * @param string $clsnm class name ,it will always be driver name if value set to re-null
          * @return bool
          */
-        public static function hasInstance($config=null,$clsnm=null){
+        public static function hasInstance($config=null,$clsnm=AUTOGET){
             isset($clsnm) or $clsnm = static::class;
             if(!isset(self::$_is[$clsnm])){
                 self::$_is[$clsnm] = [];
@@ -872,19 +865,48 @@ namespace Pindex {
             'sample class' => Object
              ************************************/
         ];
+        /**
+         * @var object 实例的驱动实例，一实例一驱动
+         */
+        protected $_driver = null;
+
+        /**
+         * @return object
+         */
+        public function getDriver(){
+            return $this->_driver;
+        }
+        /**
+         * @param object $driver
+         */
+        public function setDriver($driver){
+            $this->_driver = $driver;
+        }
+
+        /**
+         * 获取Driver-based Instance
+         * @static
+         * @param null $identify
+         * @return object
+         */
+        public static function instance($identify=AUTOGET){
+            $instance = self::getInstance(null,null,$identify);
+            $instance->setDriver(self::driver($identify));
+            return $instance;
+        }
 
         /**
          * it maybe a waste of performance
          * @param string|int|null $identify it will get the default index if set to null
          * @return object
          */
-        public static function driver($identify=null){
+        public static function driver($identify=AUTOGET){
             $clsnm = static::class;
             isset(self::$_drivers[$clsnm]) or self::$_drivers[$clsnm] = [];
             $config = null;
 
             //get default identify
-            if(null === $identify) {
+            if(AUTOGET === $identify) {
                 $config = static::getConfig();
                 if(isset($config[DRIVER_DEFAULT_INDEX])){
                     $identify = $config[DRIVER_DEFAULT_INDEX];
@@ -922,6 +944,23 @@ namespace Pindex {
                 PindexException::throwing("方法'{$method}'不存在于驱动类'{$clsnm}'中!");
             }
             return call_user_func_array([$driver, $method], $arguments);
+        }
+        /**
+         * Use driver method as its instance method
+         * @param string $method method name
+         * @param array $arguments method arguments
+         * @return mixed
+         * @throws InstanceNotExistException
+         */
+        public function __call($method, $arguments) {
+            $clsnm = static::class;
+            if(!isset($this->_driver)){
+                throw new InstanceNotExistException($clsnm);
+            }
+            if(!method_exists($this->_driver,$method)){
+                PindexException::throwing("方法'{$method}'不存在于驱动实例'{$clsnm}'中!");
+            }
+            return call_user_func_array([$this->_driver, $method], $arguments);
         }
     }
 }

@@ -22,7 +22,6 @@
 <?php } ?>
 
 <body style="overflow:hidden;" oncontextmenu="return core.contextmenu();">
-	<?php include(TEMPLATE.'common/navbar.php');?>
 	<div class="frame-header">
 		<div class="header-content">
 			<div class="header-left">

@@ -8,7 +8,7 @@
  */
 
 namespace Pindex\Core\Dao;
-use Pindex\Core\Abstracts\DaoDriver;
+use Pindex\Abstracts\Core\DaoDriver;
 
 class MySQL extends DaoDriver {
 

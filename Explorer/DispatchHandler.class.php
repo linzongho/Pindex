@@ -8,104 +8,128 @@
  */
 
 namespace Explorer;
+use Pindex\Core\Dispatcher;
+use Pindex\Exceptions\Dispatch\ActionAccessDenyException;
+use Pindex\Exceptions\Dispatch\ControllerNotFoundException;
 use Pindex\Exceptions\Dispatch\MethodNotExistException;
-use Pindex\Interfaces\Core\DispatchInstanceGeneraterInterface;
+use Pindex\Exceptions\Dispatch\ModuleNotFoundException;
+use Pindex\Interfaces\Core\DispatcherInterface;
 
-class DispatchHandler implements DispatchInstanceGeneraterInterface {
+class DispatchHandler implements DispatcherInterface {
     /**
      * @var object[]
      */
-    private $instances = [];
+    private $controllers = [];
+    /**
+     * @var \ReflectionMethod[]
+     */
+    private $methods = [];
 
     /**
-     * @param string|array $module
-     * @param string $controller
-     * @return object|object[]
+     * 获取空
+     * @param $controller
+     * @return object
      */
-    public function fetchControllerInstance($module='', $controller){
-        $instances = [];
-        if(is_array($controller)){
-            $len = count($controller);
-            for($i = 0 ; $i < $len; $i ++){
-                $ctler = $controller[$i];
-                include_once PINDEX_PATH_BASE.'/Explorer/Controller'.$controller.'.class.php';
-                $instances[] = $this->instances[$module.$controller] = new $controller();
-            }
+    private function getControllerInstance($controller){
+        if(!isset($this->controllers[$controller])){
+            include_once PINDEX_PATH_BASE.'/Explorer/Controller/'.$controller.'.class.php';
+            $this->controllers[$controller] = new $controller();
         }
-        return $instances;
+        return $this->controllers[$controller];
     }
 
     /**
-     * @param string|array $module
      * @param string $controller
      * @param string $action
-     * @return \ReflectionMethod|\ReflectionMethod[]
+     * @return array
      * @throws MethodNotExistException
      */
-    public function fetchActionInstance($module='', $controller, $action){
-        $actions = [];
-        if($controller){
-
+    private function getMethodInstance($controller,$action){
+        $key = $controller.'+'.$action;
+        if(!isset($this->methods[$key])){
+            $controllerInstance = $this->getControllerInstance($controller);
+            //方法检测
+            if(!method_exists($controllerInstance,$action)) throw new MethodNotExistException($controllerInstance,$action);
+            $this->methods[$key] = new \ReflectionMethod($controllerInstance, $action);
         }
-        if(!isset($this->instances[$module.$controller])){
-            include_once PINDEX_PATH_BASE.'/Explorer/Controller'.$controller.'.class.php';
-            $this->instances[$module.$controller] = new $controller();
-        }
-        $classInstance = $this->instances[$module.$controller];
-        //方法检测
-        if(!method_exists($classInstance,$action)){
-            throw new MethodNotExistException($controller,$action);
-        }
-        $actions[] = new \ReflectionMethod($classInstance, $action);
-        return $actions;
+        return $this->methods[$key];
     }
 
-    private $module = null;
+
     private $controller = null;
     private $action = null;
 
     /**
-     * 设置调度需要的模块、控制器、操作信息
-     * @param string|array $module
-     * @param string|array $controller
-     * @param string|array $action
-     * @return void
+     * 获取调度的模块
+     * @return string
      */
-    public function setParameters($module, $controller, $action)
+    public function getModule()
     {
-        $this->module = is_array($module)?$module:[$module];
-        $this->controller = is_array($controller)?$controller:[$controller];
-        $this->action = is_array($action)?$action:[$action];
+        return '';
     }
 
     /**
-     * @return object
+     * 获取调度的控制器
+     * @return string
      */
-    public function nextController()
+    public function getController()
     {
-        static $flag = 0;
-        if(isset($this->controller[$flag])){
-            $controller = $this->controller[$flag];
-            include_once PINDEX_PATH_BASE.'/Explorer/Controller/'.$controller.'.class.php';
-            $flag ++;
-            return new $controller();
+        return $this->controller;
+    }
+
+    /**
+     * 获取调度的操作
+     * @return string
+     */
+    public function getAction()
+    {
+        return $this->action;
+    }
+
+    /**
+     * 检查并设置默认设置
+     * @param $modules
+     * @param $ctrler
+     * @param $action
+     * @return $this
+     */
+    public function check($modules, $ctrler, $action)
+    {
+        $this->controller = $ctrler;
+        $this->action = $action;
+        return $this;
+    }
+
+    /**
+     * 调度到对应的action上去,
+     * @param string|array $modules
+     * @param string|array $ctrlers
+     * @param string|array $actions
+     * @param array $params
+     * @return mixed
+     * @throws ActionAccessDenyException
+     * @throws ControllerNotFoundException
+     * @throws MethodNotExistException
+     * @throws ModuleNotFoundException
+     */
+    public function dispatch($modules, $ctrlers, $actions, array $params = []){
+
+        if(!is_array($ctrlers)) $ctrlers = [$ctrlers];
+        if(!is_array($actions)) $actions = [$actions];
+        $maxlen = count($ctrlers);
+        $maxlen2 = count($actions);
+
+        $maxlen2 > $maxlen and $maxlen = $maxlen2;
+
+        $result = null;
+        for($i = 0; $i < $maxlen; $i++){
+            $controller = isset($ctrlers[$i])?$ctrlers[$i]:$ctrlers[0];
+            $action = isset($actions[$i])?$actions[$i]:$actions[0];
+
+            $controllerInstance = $this->getControllerInstance($controller);
+            $methodInstance = $this->getMethodInstance($controller,$action);
+            $result = Dispatcher::execute($controllerInstance,$methodInstance);
         }
-        return null;
-    }
-
-    /**
-     * @return \ReflectionMethod
-     */
-    public function nextAction()
-    {
-        // TODO: Implement nextAction() method.
-    }
-
-    /**
-     * @return bool
-     */
-    public function hasNext()
-    {
-        // TODO: Implement hasNext() method.
+        return $result;//只有最后一个结果才能被返回
     }
 }

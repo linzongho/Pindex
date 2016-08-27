@@ -7,36 +7,38 @@
  * Time: 11:01 AM
  */
 namespace Pindex\Core;
-use Pindex\Debugger;
-use Pindex\Exceptions\Dispatch\ControllerNotFoundException;
-use Pindex\Exceptions\Dispatch\MethodNotExistException;
-use Pindex\Exceptions\Dispatch\ModuleNotFoundException;
-use Pindex\Exceptions\Dispatch\ActionInvalidException;
-use Pindex\Interfaces\Core\DispatcherInterface;
+use Pindex\Exceptions\Dispatch\ActionAccessDenyException;
 use Pindex\Lite;
 use Pindex\PindexException;
+use ReflectionMethod;
 
 /**
  * Class Dispatcher
+ * @method string getModule()
+ * @method string getController()
+ * @method string getAction()
+ * @method $this check(string $modules,string $ctrler,string $action) 检查并设置默认设置
+ * @method mixed dispatch(string|array $modules,string $ctrler,string $action,array $params=[]) 调度到对应的action上去
  * @package Pindex\Core
  */
 class Dispatcher extends Lite{
 
     const CONF_NAME = 'dispatcher';
     const CONF_CONVENTION = [
-        //空缺时默认补上,Done!
-        'INDEX_MODULE'      => 'Home',
-        'INDEX_CONTROLLER'  => 'Index',
-        'INDEX_ACTION'      => 'index',
         'DRIVER_DEFAULT_INDEX' => 0,//默认驱动ID，类型限定为int或者string
         'DRIVER_CLASS_LIST' => [
             'Pindex\\Core\\Dispatcher\\LiteDispatcher',
         ],//驱动类的列表
+        'DRIVER_CONFIG_LIST'  => [
+            [
+                //空缺时默认补上,Done!
+                'INDEX_MODULE'      => 'Home',
+                'INDEX_CONTROLLER'  => 'Index',
+                'INDEX_ACTION'      => 'index',
+            ]
+        ],
     ];
 
-    private static $_module = null;
-    private static $_controller = null;
-    private static $_action = null;
     /**
      * @var array
      */
@@ -47,52 +49,28 @@ class Dispatcher extends Lite{
     }
 
     /**
-     * 匹配空缺补上默认
-     * @param string|array $modules
-     * @param string $ctrler
-     * @param string $action
-     * @return array
+     * 执行控制器实例的对应方法
+     * @static
+     * @param object $controllerInstance
+     * @param ReflectionMethod $method
+     * @return mixed|null
+     * @throws ActionAccessDenyException
      */
-    public static function checkDefault($modules,$ctrler,$action){
-        self::$_module      = $modules?$modules:self::$_config['INDEX_MODULE'];
-        self::$_controller  = $ctrler?$ctrler:self::$_config['INDEX_CONTROLLER'];
-        self::$_action      = $action?$action:self::$_config['INDEX_ACTION'];
-
-        self::$_module and is_array(self::$_module) and self::$_module = implode('/',self::$_module);
-
-        return [
-            'm' => self::$_module,
-            'c' => self::$_controller,
-            'a' => self::$_action,
-        ];
-    }
-
-    /**
-     * @var DispatcherInterface
-     */
-    private static $driver = null;
-
-    /**
-     * 制定对应的方法
-     * @param string $modules
-     * @param string $ctrler
-     * @param string $action
-     * @param array $parameter
-     * @return mixed 方法返回什么就返回什么
-     * @throws ActionInvalidException
-     * @throws ControllerNotFoundException
-     * @throws MethodNotExistException
-     * @throws ModuleNotFoundException
-     */
-    public static function exec($modules=null,$ctrler=null,$action=null,array $parameter=[]){
-        null === $modules   and $modules = self::$_module;
-        null === $ctrler    and $ctrler = self::$_controller;
-        null === $action    and $action = self::$_action;
-
-        PINDEX_DEBUG_MODE_ON and Debugger::trace($modules,$ctrler,$action);
-
-        self::$driver = self::driver();
-        return self::$driver->dispatch($modules,$ctrler,$action,$parameter);
+    public static function execute($controllerInstance,\ReflectionMethod $method){
+        $result = null;
+        if ($method->isPublic() and !$method->isStatic()) {//仅允许访问静态的公开方法
+            //方法的参数检测
+            if ($method->getNumberOfParameters()) {//有参数
+                $args = Dispatcher::fetchMethodArgs($method);
+                //执行方法
+                $result = $method->invokeArgs($controllerInstance, $args);
+            } else {//无参数的方法调用
+                $result = $method->invoke($controllerInstance);
+            }
+        } else {
+            throw new ActionAccessDenyException($method);
+        }
+        return $result;
     }
 
     /**
@@ -105,7 +83,7 @@ class Dispatcher extends Lite{
         //获取输入参数
         $vars = $args = [];
         switch(strtoupper($_SERVER['REQUEST_METHOD'])){
-            case 'POST':$vars    =  array_merge($_GET,$_POST);  break;
+            case 'POST':$vars    =  array_merge($_GET,$_POST);  break;//POST覆盖METHOD
             case 'PUT':parse_str(file_get_contents('php://input'), $vars);  break;
             default:$vars  =  $_GET;
         }
@@ -126,20 +104,4 @@ class Dispatcher extends Lite{
         return $args;
     }
 
-    /**
-     * 加载当前访问的模块的指定配置
-     * 配置目录在模块目录下的'Common/Conf'
-     * @param string $name 配置名称,多个名称以'/'分隔
-     * @param string $type 配置类型,默认为php
-     * @return array
-     */
-    public static function load($name,$type=Configger::TYPE_PHP){
-        if(!defined('REQUEST_MODULE')) return PindexException::throwing('\'load\'必须在\'exec\'方法之后调用!');//前提是正确制定过exec方法
-        $path = PINDEX_PATH_APP.'/'.REQUEST_MODULE.'/Common/Config/';
-        if(is_dir($path)){
-            $file = "{$path}/{$name}.".$type;
-            return Configger::load($file);
-        }
-        return [];
-    }
 }

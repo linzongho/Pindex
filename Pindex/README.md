@@ -17,6 +17,11 @@
     如果参数是类的名称字符串，也可以执行。。。
 
 
+http://hr.nd.com.cn/AboutND.aspx
+
+
+Vendor:https://github.com/kalcaddle/KODExplorer
+
 
 
 

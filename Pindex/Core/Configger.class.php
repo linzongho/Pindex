@@ -11,6 +11,10 @@ use Pindex\Debugger;
 use Pindex\PindexException;
 use Pindex\Utils;
 
+/**
+ * Class Configger 配置管理类
+ * @package Pindex\Core
+ */
 class Configger {
     /**
      * 配置类型

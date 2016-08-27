@@ -49,4 +49,5 @@ interface URLParseCreaterInterface {
      * @return string 可以访问的URI
      */
     public function create($modules,$contler,$action,array $params=null);
+
 }

@@ -13,7 +13,7 @@ use PDOException;
 use PDOStatement;
 use Pindex\Lite;
 use Pindex\PindexException as Exception;
-use Pindex\Core\Abstracts\DaoDriver;
+use Pindex\Abstracts\Core\DaoDriver;
 
 class DaoUtil {
     /**
@@ -338,6 +338,5 @@ class Dao extends Lite {
     public function __call($name,$args){
         return in_array($name,self::$config['forbidden'],true)? false :call_user_func_array([$this->pdo,$name],$args);
     }
-
 
 }

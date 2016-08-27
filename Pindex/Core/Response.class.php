@@ -161,4 +161,29 @@ class Response {
                 PindexException::throwing('Invalid output type!');
         }
     }
+
+    /**
+     * 重定向
+     * @param string $url 重定向地址
+     * @param int $time
+     * @param string $message
+     * @return void
+     */
+    public static function redirect($url,$time=0,$message=''){
+        //多行URL地址支持
+        $url = str_replace(['\n','\r'], '', $url);
+        $message or $message = "系统将在{$time}秒之后自动跳转到{$url}！";
+
+        if(headers_sent()){//检查头部是否已经发送
+            exit("<meta http-equiv='Refresh' content='{$time};URL={$url}'>{$message}");
+        }else{
+            if(0 === $time){
+                header('Location: ' . $url);
+            }else{
+                header("refresh:{$time};url={$url}");
+                exit($message);
+            }
+        }
+    }
+
 }

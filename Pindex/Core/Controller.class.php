@@ -6,7 +6,6 @@
  * Date: 8/22/16
  * Time: 11:14 AM
  */
-
 namespace Pindex\Core;
 use Pindex\Debugger;
 use Pindex\PindexException;
@@ -122,8 +121,7 @@ class Controller {
      */
     public function redirect($compo,array $params=[],$time=0,$message=''){
         $url = Router::url($compo,$params);
-//        \Pindex\println($url,true);
-        Router::redirect($url,$time,$message);
+        Response::redirect($url,$time,$message);
     }
 
     /**

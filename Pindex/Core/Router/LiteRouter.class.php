@@ -6,8 +6,8 @@
  * Date: 8/24/16
  * Time: 5:24 PM
  */
-
 namespace Pindex\Core\Router;
+use Pindex\Abstracts\LiteDriver;
 use Pindex\Debugger;
 use Pindex\Interfaces\Core\URLParseCreaterInterface;
 use Pindex\PindexException;
@@ -18,9 +18,9 @@ use Pindex\Utils;
  * 内置URL解析创建驱动
  * @package Core
  */
-class LiteRouter implements URLParseCreaterInterface{
+class LiteRouter extends LiteDriver implements URLParseCreaterInterface {
 
-    private $config = [
+    protected $config = [
         //------------------------
         //For URL route
         //------------------------
@@ -73,10 +73,6 @@ class LiteRouter implements URLParseCreaterInterface{
         //使用的端口号，默认为80时会显示为隐藏
         'SERVER_PORT'   => 80,
     ];
-
-    public function __construct(array $config=null){
-        $config and $this->config = array_merge($this->config,$config);
-    }
 
     /**
      * 返回解析结果

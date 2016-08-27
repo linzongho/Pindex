@@ -13,10 +13,74 @@ use Pindex\Debugger;
 use Pindex\Exceptions\Dispatch\ControllerNotFoundException;
 use Pindex\Exceptions\Dispatch\MethodNotExistException;
 use Pindex\Exceptions\Dispatch\ModuleNotFoundException;
-use Pindex\Exceptions\Dispatch\ActionInvalidException;
+use Pindex\Exceptions\Dispatch\ActionAccessDenyException;
 use Pindex\Interfaces\Core\DispatcherInterface;
 
 class LiteDispatcher implements DispatcherInterface{
+
+    private $config = [
+        //空缺时默认补上,Done!
+        'INDEX_MODULE'      => 'Home',
+        'INDEX_CONTROLLER'  => 'Index',
+        'INDEX_ACTION'      => 'index',
+    ];
+
+    public function __construct(array $config=null){
+        $config and $this->config = array_merge($this->config,$config);
+    }
+
+    /**
+     * @var string 待调度的模块
+     */
+    private $module = '';
+    /**
+     * @var string  待调度的控制器
+     */
+    private $controller = '';
+    /**
+     * @var string 待调度的操作
+     */
+    private $action = '';
+
+    /**
+     * 获取调度的模块
+     * @return string
+     */
+    public function getModule(){
+        return $this->module;
+    }
+
+    /**
+     * 获取调度的控制器
+     * @return string
+     */
+    public function getController(){
+        return $this->controller;
+    }
+
+    /**
+     * 获取调度的操作
+     * @return string
+     */
+    public function getAction(){
+        return $this->action;
+    }
+
+    /**
+     * 检查并设置默认设置
+     * @param $modules
+     * @param $ctrler
+     * @param $action
+     * @return $this
+     */
+    public function check($modules,$ctrler,$action){
+        $this->module      = $modules?$modules:$this->config['INDEX_MODULE'];
+        $this->controller  = $ctrler?$ctrler:$this->config['INDEX_CONTROLLER'];
+        $this->action      = $action?$action:$this->config['INDEX_ACTION'];
+
+        $this->module and is_array($this->module) and $this->module = implode('/',$this->module);
+        return $this;
+    }
 
     /**
      * @param array|string $modules
@@ -24,7 +88,7 @@ class LiteDispatcher implements DispatcherInterface{
      * @param array|string $action
      * @param array $params
      * @return mixed|null
-     * @throws ActionInvalidException
+     * @throws ActionAccessDenyException
      * @throws ControllerNotFoundException
      * @throws MethodNotExistException
      * @throws ModuleNotFoundException
@@ -49,22 +113,7 @@ class LiteDispatcher implements DispatcherInterface{
         }
         $method = new \ReflectionMethod($classInstance, $action);
 
-        $result = null;
-        if ($method->isPublic() and !$method->isStatic()) {//仅允许非静态的公开方法
-            //方法的参数检测
-            if ($method->getNumberOfParameters()) {//有参数
-                $args = Dispatcher::fetchMethodArgs($method);
-                //执行方法
-                $result = $method->invokeArgs($classInstance, $args);
-            } else {//无参数的方法调用
-                $result = $method->invoke($classInstance);
-            }
-        } else {
-            throw new ActionInvalidException($method);
-        }
-
-        PINDEX_DEBUG_MODE_ON and Debugger::status('execute_end');
-        return $result;
+        return Dispatcher::execute($classInstance,$method);
     }
 
 }
