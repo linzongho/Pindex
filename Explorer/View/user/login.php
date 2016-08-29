@@ -4,14 +4,14 @@
 <head>
 	<meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
 	<title><?php echo $L['kod_name'].$L['kod_power_by'];?></title>
-	<link href="<?php echo STATIC_PATH;?>images/favicon.ico" rel="Shortcut Icon" >
-	<link href="<?php echo STATIC_PATH;?>style/bootstrap.css?ver=<?php echo KOD_VERSION;?>" rel="stylesheet"/>
+	<link href="./static/images/favicon.ico" rel="Shortcut Icon" >
+	<link href="./static/style/bootstrap.css" rel="stylesheet"/>
 	<link href="./static/style/font-awesome/css/font-awesome.css" rel="stylesheet" >
 	<!-- 字体不能跨域问题 -->
 	<!--[if IE 7]>
 	<link rel="stylesheet" href="./static/style/font-awesome/css/font-awesome-ie7.css">
 	<![endif]-->
-	<link rel="stylesheet" type="text/css" href="<?php echo STATIC_PATH;?>style/login.css">
+	<link rel="stylesheet" type="text/css" href="./static/style/login.css">
 </head>
 <body>
 	<?php 
@@ -55,10 +55,10 @@
 	</div>
 <div class="common_footer"><?php echo $L['copyright_pre'].' v'.KOD_VERSION.' | '.$L['copyright_info'];?></div>
 <script src="./<?php echo ENTRY_NAME; ?>?share/common_js#id=<?php echo rand_string(8);?>"></script>
-<script src="<?php echo STATIC_PATH;?>js/lib/seajs/sea.js?ver=<?php echo KOD_VERSION;?>"></script>
+<script src="./static/js/lib/seajs/sea.js"></script>
 <script type="text/javascript">
 	seajs.config({
-		base: "<?php echo STATIC_PATH;?>js/",
+		base: "./static/js/",
 		preload: ["lib/jquery-1.8.0.min"],
 		map:[
 			[ /^(.*\.(?:css|js))(.*)$/i,'$1$2?ver='+G.version]

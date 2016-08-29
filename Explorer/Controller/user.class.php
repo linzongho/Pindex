@@ -28,9 +28,9 @@ class user extends Controller {
      */
     public function loginCheck(){
         if (ST == 'share') return true;//共享页面
-        if(in_array(ACT,$this->notCheck)){
-            //不需要判断的action
-        }else if(isset($_SESSION['kod_login']) and $_SESSION['kod_login'] === true and $_SESSION['kod_user']['name']!=''){
+        if(in_array(ACT,$this->notCheck)){//不需要判断的action
+            return;
+        }else if($_SESSION['kod_login']===true && $_SESSION['kod_user']['name']!=''){
             define('USER',USER_PATH.$this->user['name'].'/');
             define('USER_TEMP',USER.'data/temp/');
             define('USER_RECYCLE',USER.'recycle/');

@@ -21,7 +21,7 @@ use ReflectionMethod;
  * @method mixed dispatch(string|array $modules,string $ctrler,string $action,array $params=[]) 调度到对应的action上去
  * @package Pindex\Core
  */
-class Dispatcher extends Lite{
+class Dispatcher extends Lite {
 
     const CONF_NAME = 'dispatcher';
     const CONF_CONVENTION = [
@@ -35,7 +35,7 @@ class Dispatcher extends Lite{
                 'INDEX_MODULE'      => 'Home',
                 'INDEX_CONTROLLER'  => 'Index',
                 'INDEX_ACTION'      => 'index',
-            ]
+            ],
         ],
     ];
 

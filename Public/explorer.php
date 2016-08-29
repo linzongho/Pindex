@@ -83,22 +83,12 @@ session_write_close();//避免session锁定问题;之后要修改$_SESSION 需�
 
 //语言包加载：优先级：cookie获取>自动识别
 //首次没有cookie则自动识别——存入cookie,过期时间无限
-if (isset($_COOKIE['kod_user_language'])) {
-    $lang = $_COOKIE['kod_user_language'];
+//首次没有cookie则自动识别——存入cookie,过期时间无限
+if (isset($_COOKIE['explorer_user_language'])) {
+    $lang = $_COOKIE['explorer_user_language'];
 }else{//没有cookie
-    preg_match('/^([a-z\-]+)/i', $_SERVER['HTTP_ACCEPT_LANGUAGE'], $matches);
-    $lang = $matches[1];
-    switch (substr($lang,0,2)) {
-        case 'zh':
-            if ($lang != 'zn-TW'){
-                $lang = 'zh-CN';
-            }
-            break;
-        case 'en':$lang = 'en';break;
-        default:$lang = 'en';break;
-    }
-    $lang = str_replace('-', '_',$lang);
-    setcookie('kod_user_language',$lang, time()+3600*24*365);
+    $lang = \Pindex\Util\Helper\ClientAgent::getClientLang('en');
+    setcookie('explorer_user_language',$lang, time()+3600*24*365);
 }
 if ($lang == '') $lang = 'en';
 $lang = str_replace(array('/','\\','..','.'),'',$lang);

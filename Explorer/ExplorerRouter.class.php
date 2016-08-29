@@ -31,18 +31,14 @@ class ExplorerRouter implements URLParseCreaterInterface
      * @return bool
      */
     public function parse(){
-//        $_COOKIE = stripslashes_deep($_COOKIE);
-//        $_GET	 = stripslashes_deep($_GET);
-//        $_POST	 = stripslashes_deep($_POST);
         $return = array_merge($_GET,$_POST);
         $remote = array_get($return,0);
         $return['URLremote'] = explode('/',trim($remote[0],'/'));
-        $this->result[0] = isset($return['URLremote'][0])?$return['URLremote'][0]:$this->default_controller;
-        $this->result[1] = isset($return['URLremote'][1])?$return['URLremote'][1]:$this->default_action;
+        $this->result[0] = empty($return['URLremote'][0])?$this->default_controller:$return['URLremote'][0];
+        $this->result[1] = empty($return['URLremote'][1])?$this->default_action:$return['URLremote'][1];
         define('ST',$this->result[0]);
         define('ACT',$this->result[1]);
         $GLOBALS['in'] = $return;
-//        \Pindex\println($this->result,true);
         return true;
     }
 

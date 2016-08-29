@@ -6,14 +6,10 @@
  * Date: 8/22/16
  * Time: 11:57 AM
  */
-
 namespace Pindex\Library;
-
 use Pindex\AutoConfig;
-use Pindex\PindexException;
 
 class Cookie {
-
     use AutoConfig;
 
     const CONF_NAME = 'cookie';
@@ -34,8 +30,14 @@ class Cookie {
         'setcookie' => true,
     ];
 
+    /**
+     * @var array
+     */
+    private static $config = [];
+
     public static function __init(){
-        self::getConfig('httponly',false) and ini_set('session.cookie_httponly', 1);
+        self::$config = self::getConfig();
+        empty(self::$config['httponly']) or ini_set('session.cookie_httponly', 1);
     }
 
     /**
@@ -57,10 +59,9 @@ class Cookie {
      */
     public static function prefix($prefix = null) {
         if(null === $prefix){
-            return self::getConfig('prefix');
+            return self::$config['prefix'];
         }else{
-            //修改默认的配置
-            return self::setConfig('prefix',$prefix)?$prefix:PindexException::throwing('update failed!');
+            return self::$config['prefix'] = $prefix;
         }
     }
 
@@ -73,7 +74,7 @@ class Cookie {
      */
     public static function set($name, $value = '', $option = null){
         // 参数设置(会覆盖黙认设置)
-        $config  = &self::getConfig();
+        $config = self::$config;
         if (isset($option)) {
             if (is_numeric($option)) {
                 $option = ['expire' => $option];
@@ -100,14 +101,10 @@ class Cookie {
     /**
      * Cookie获取
      * @param string $name cookie名称
-     * @param string|null $prefix cookie前缀
+     * @param string $prefix cookie前缀
      * @return mixed
      */
-    public static function get($name, $prefix = null) {
-        if(!isset($prefix)){
-            $config = self::getConfig();
-            $prefix = isset($config['prefix'])?$config['prefix']:'';
-        }
+    public static function get($name, $prefix = '') {
         $name   = $prefix . $name;
         if (isset($_COOKIE[$name])) {
             $value = $_COOKIE[$name];

@@ -26,6 +26,13 @@ class ClientAgent {
     const AGENT_SAFARI  = 'safari';
     const AGENT_UNKNOWN = 'unknown';
 
+
+    const LANG_ZH       = 'zh';
+    const LANG_ZH_CN    = 'zh_CN';
+    const LANG_ZH_TW    = 'zh_TW';
+    const LANG_EN       = 'en';
+    const LANG_EN_US    = 'en_US';
+
     /**
      * 获取浏览器类型
      * @return string
@@ -58,8 +65,23 @@ class ClientAgent {
         $matches = [];
         if(isset($_SERVER['HTTP_ACCEPT_LANGUAGE'])){
             preg_match('/^([a-z\-]+)/i', $_SERVER['HTTP_ACCEPT_LANGUAGE'], $matches);
+            if(!empty($matches[1])){
+                switch (substr($matches[1],0,2)) {
+                    case 'zh':
+                        //忽略新加坡的简体和香港的繁体
+                        if ($matches[1] != 'zn-TW'){
+                            $matches[1] = 'zh-CN';
+                        }
+                        break;
+                    //default to 'en'
+                    case 'en':
+                    default:
+                        $matches[1] = 'en';break;
+                }
+                return str_replace('-', '_',$matches[1]);
+            }
         }
-        return empty($matches[1])?$default:$matches[1];
+        return $default;
     }
 
     /**
