@@ -18,18 +18,27 @@ class EC21 extends Platform {
     /**
      * @var string 登录表单提交页面
      */
-    protected $submit_addresss = 'https://login.ec21.com/global/login/Login.jsp';
-    protected $method         = 'post';
+    protected $login_addresss = 'https://login.ec21.com/global/login/LoginSubmit.jsp';
+    /**
+     * @var string 产品提交页面
+     */
+    protected $submit_address   = 'http://www.ec21.com/global/basic/MyProductEditCheck.jsp';//global/basic/MyProductEditSubmit.jsp??
+
+
+    public function getCategoryList(){
+        $url = 'http://www.ec21.com/global/category/categoryMajorSelectGetData.jsp?actionName=category&step=';
+        //step from 1 to 4 total 4level
+    }
 
     //隐藏表单
     protected $form_hiddens = [
-        'nextUrl'  => 'http://www.ec21.com/',
-        'inq_gubun'  => '',
         'FBIn'  => '',
         'fEmail'  => '',
+        'inq_gubun'  => '',
+        'nextUrl'  => 'http://www.ec21.com/',
         'periodLimit'   => 'Y',
     ];
-
+    //显式表单
     protected $form_username  = 'user_id';
     protected $form_password  = 'user_pw';
 
@@ -44,22 +53,41 @@ class EC21 extends Platform {
     protected $password = 'zhangyishang';
 
 
-    public function check($username) {
+    public function submitProduct(){
+        $form = [
+            'gcatalog_id'   => 'Products',//分組ID,default to 'Products'
+            'catalog_nm'    => 'Light Booble',//Product Name
+            'keyword1'      => 'Light',
+            'keyword2'      => 'Booble',
+            'keyword3'      => 'Booble2',
+            'keyword4'      => 'Booble3',
+            // ** 分類ID 以及分類名稱 **
+            'categorymId'   => '070709',
+            'categoryNm'    => 'Faucets, Mixers & Taps',  //分類ID
+
+            //Attribute
+            'origin'    => 'CN',//Place of Origin
+
+                'allDesc'   => 'Faucets, Mixers & TapsFaucets, Mixers & TapsFaucets, Mixers & TapsFaucets, Mixers & TapsFaucets, Mixers & TapsFaucets, Mixers & TapsFaucets, Mixers & TapsFaucets, Mixers & TapsFaucets, Mixers & TapsFaucets, Mixers & TapsFaucets, Mixers & TapsFaucets, Mixers & TapsFaucets, Mixers & TapsFaucets, Mixers & TapsFaucets, Mixers & TapsFaucets, Mixers & TapsFaucets, Mixers & TapsFaucets, Mixers & TapsFaucets, Mixers & TapsFaucets, Mixers & TapsFaucets, Mixers & Taps',//detail
+            'display'   => 'Y',
+        ];
+        $method = $this->submit_method ;
+        $result = $this->$method($this->submit_address,$form);
+        echo $result;
     }
 
-    public function login($username, $password) {
-
-        get_headers();
-    }
-
-    protected function getPlatformSetting()
-    {
+    protected function getPlatformSetting() {
         return [];
     }
 
     protected function getUserSetting()
     {
         return [];
+    }
+
+
+    public function submit(){
+
     }
 
 }

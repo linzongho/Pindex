@@ -8,6 +8,11 @@
 namespace Application\Publisher\Controller;
 use Application\Publisher\Platform\EC21;
 
+spl_autoload_register(function ($clsnm){
+    //TODO:以本目录建立类地图
+});
+
+
 class Index {
 
     private function getUsername(){
@@ -19,14 +24,15 @@ class Index {
     }
 
     public function index(){
-
-
-        $password = md5('123456') . '1.d>|rWo@h\'5^{|bKa;/H~ptmSxP"51M';for ($i = 0; $i < 100; $i++) {$password = sha1($password);}echo $password;
-
-
 //        $platform = $this->getPlatform();
 //        $platform = new $platform();
 
+        $platform = new EC21();
+        $platform->login();
+
+        $platform->submitProduct();
+
     }
+
 
 }
