@@ -6,15 +6,15 @@
  * Time: 12:04 PM
  */
 
-namespace Application\Publisher\Platform;
-use Application\Publisher\Util\HttpRequest;
+namespace Platform;
+use Util\HttpRequest;
 use Pindex\Debugger;
 
 defined('PATH_COOKIE') or define('PATH_COOKIE',dirname(__DIR__).'/Cookie/');
 
 /**
  * Class Platform 平台抽象
- * @package Application\Publisher\Platform
+ * @package Platform
  */
 abstract class Platform {
 

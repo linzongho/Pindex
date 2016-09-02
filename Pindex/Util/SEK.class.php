@@ -401,4 +401,13 @@ class SEK {
         $text = preg_replace ($search, $replace, $document);
         return $text;
     }
+
+    public static function utc2Timestamp($text,$replacement=0){
+        if(preg_match('/Expires=([\w,\s\d-:.]*\sGMT)/',$text,$matches)){
+            return isset($matches[1])?strtotime($matches[1]):$replacement;
+        }else{
+            return $replacement;
+        }
+    }
+
 }

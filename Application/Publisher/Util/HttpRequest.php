@@ -6,9 +6,7 @@
  * Date: 8/31/16
  * Time: 12:57 PM
  */
-namespace Application\Publisher\Util;
-
-
+namespace Util;
 use Pindex\Debugger;
 
 class HttpRequest {
@@ -19,14 +17,27 @@ class HttpRequest {
      * @param string|array $fields
      * @param string|null $cookie 是否使用cookie
      * @param bool $withHead 返回值是否带header
+     * @param string $file 上传的文件
      * @return mixed
      */
-    public static function post($url,$fields,$cookie=null,$withHead=false){
+    public static function post($url,$fields,$cookie=null,$withHead=true,$file=null){
         $ch = curl_init($url);
         if(strpos($url,'https://') === 0){
             curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, false);
             curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
         }
+
+        //上传文件
+        if($file and is_readable($file)){
+            if(is_string($fields)){
+                $fields = parse_str($fields);
+            }elseif(is_object($fields)){
+                $fields = (array) $fields;
+            }else{}// is array
+            $fields['media'] = new \CURLFile($file);
+        }
+
+        //上传表单编译
         if(is_array($fields) or is_object($fields)){
             $fields = http_build_query($fields);
         }

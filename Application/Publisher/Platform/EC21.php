@@ -6,12 +6,12 @@
  * Time: 12:34 PM
  */
 
-namespace Application\Publisher\Platform;
+namespace Platform;
 
 /**
  * Class EC21
  * http://www.ec21.com/
- * @package Application\Publisher\Platform
+ * @package Platform
  */
 class EC21 extends Platform {
 
@@ -68,7 +68,7 @@ class EC21 extends Platform {
             //Attribute
             'origin'    => 'CN',//Place of Origin
 
-                'allDesc'   => 'Faucets, Mixers & TapsFaucets, Mixers & TapsFaucets, Mixers & TapsFaucets, Mixers & TapsFaucets, Mixers & TapsFaucets, Mixers & TapsFaucets, Mixers & TapsFaucets, Mixers & TapsFaucets, Mixers & TapsFaucets, Mixers & TapsFaucets, Mixers & TapsFaucets, Mixers & TapsFaucets, Mixers & TapsFaucets, Mixers & TapsFaucets, Mixers & TapsFaucets, Mixers & TapsFaucets, Mixers & TapsFaucets, Mixers & TapsFaucets, Mixers & TapsFaucets, Mixers & TapsFaucets, Mixers & Taps',//detail
+            'allDesc'   => 'Faucets, Mixers & TapsFaucets, Mixers & TapsFaucets, Mixers & TapsFaucets, Mixers & TapsFaucets, Mixers & TapsFaucets, Mixers & TapsFaucets, Mixers & TapsFaucets, Mixers & TapsFaucets, Mixers & TapsFaucets, Mixers & TapsFaucets, Mixers & TapsFaucets, Mixers & TapsFaucets, Mixers & TapsFaucets, Mixers & TapsFaucets, Mixers & TapsFaucets, Mixers & TapsFaucets, Mixers & TapsFaucets, Mixers & TapsFaucets, Mixers & TapsFaucets, Mixers & TapsFaucets, Mixers & Taps',//detail
             'display'   => 'Y',
         ];
         $method = $this->submit_method ;
